@@ -1,0 +1,119 @@
+<%- include('partials/header') %>
+
+<div class="container" style="margin-top:40px;">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Thanh toán đơn đặt phòng</h4>
+        </div>
+        <div class="card-body">
+          <% if (typeof status !== 'undefined' && status) { %>
+            <div class="alert alert-<%= status === 'success' ? 'success' : 'danger' %> text-center" role="alert">
+          <% if (status === 'success') { %>
+            🎉 Thanh toán MoMo thành công! Cảm ơn bạn đã đặt phòng.
+          <% } else if (status === 'failed') { %>
+            ⚠️ Thanh toán thất bại. Vui lòng thử lại hoặc chọn phương thức khác.
+          <% } else { %>
+            ❌ Có lỗi xảy ra trong quá trình thanh toán.
+          <% } %>
+        </div>
+        <% } %>
+          <h5>Thông tin đơn</h5>
+          <p>Phòng: <strong><%= booking.roomId?.name || booking.roomId?.type || booking.roomId?.roomNumber %></strong></p>
+          <p>Check-in: <%= new Date(booking.checkIn).toLocaleDateString('vi-VN') %> &nbsp; | &nbsp; Check-out: <%= new Date(booking.checkOut).toLocaleDateString('vi-VN') %></p>
+          <p>Số tiền: <strong><%= (booking.totalPrice || 0).toLocaleString('vi-VN') %> đ</strong></p>
+          <hr>
+
+          <h4 class="mt-4 mb-3 fw-bold">Chọn hình thức thanh toán</h4>
+
+<form id="paymentForm" action="" method="POST">
+  <input type="hidden" name="bookingId" value="<%= booking._id %>">
+  <div class="payment-methods text-center mb-3">
+    <button type="button" class="btn btn-outline-danger mx-2" id="momo-btn">
+      <img src="/images/qrcodes/momo-logo.png" alt="MoMo" style="height: 30px; margin-right: 6px;">
+      Ví MoMo
+    </button>
+    <button type="button" class="btn btn-outline-primary mx-2" id="vnpay-btn">
+      <img src="/images/qrcodes/vnpay-logo.jpg" alt="VNPay" style="height: 30px; margin-right: 6px;">
+      Ví VNPay
+    </button>
+  </div>
+
+  <input type="hidden" id="method" name="method" value="">
+
+  <div id="payMessage" class="text-center mt-3 text-muted"></div>
+
+  <div class="text-center mt-4">
+    <button type="submit" class="btn btn-success w-50">Xác nhận</button>
+    <a href="/user/history" class="btn btn-secondary w-25">Quay lại</a>
+  </div>
+</form>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const momoBtn = document.getElementById('momo-btn');
+    const vnpayBtn = document.getElementById('vnpay-btn');
+    const methodInput = document.getElementById('method');
+    const form = document.getElementById('paymentForm');
+    const payMessage = document.getElementById('payMessage');
+
+    // Mặc định chưa chọn gì
+    methodInput.value = "";
+
+    // Xử lý chọn phương thức
+    momoBtn.addEventListener('click', () => {
+      methodInput.value = 'momo';
+      momoBtn.classList.add('btn-danger');
+      vnpayBtn.classList.remove('btn-primary');
+      payMessage.innerHTML = '<span class="text-primary">Bạn đã chọn thanh toán qua <b>MoMo</b>.</span>';
+    });
+
+    vnpayBtn.addEventListener('click', () => {
+      methodInput.value = 'vnpay';
+      vnpayBtn.classList.add('btn-primary');
+      momoBtn.classList.remove('btn-danger');
+      payMessage.innerHTML = '<span class="text-primary">Bạn đã chọn thanh toán qua <b>VNPay</b>.</span>';
+    });
+
+    // Xử lý nút Xác nhận
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const method = methodInput.value;
+      const bookingId = '<%= booking._id %>';
+
+      if (!method) {
+        payMessage.innerHTML = '<span class="text-danger">⚠️ Vui lòng chọn phương thức thanh toán trước khi xác nhận!</span>';
+        return;
+      }
+
+      // ===== Nếu chọn MOMO =====
+      if (method === 'momo') {
+        payMessage.innerHTML = '<span class="text-primary">⏳ Đang khởi tạo QR MoMo test...</span>';
+        try {
+          const response = await fetch('/payment/momo/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId })
+          });
+          const data = await response.json();
+          if (data.payUrl) {
+            window.location.href = data.payUrl;
+          } else {
+            payMessage.innerHTML = '<span class="text-danger">Không thể khởi tạo QR MoMo test.</span>';
+          }
+        } catch (err) {
+          console.error(err);
+          payMessage.innerHTML = '<span class="text-danger">Lỗi khi gọi API MoMo.</span>';
+        }
+      }
+
+      // ===== Nếu chọn VNPAY =====
+      else if (method === 'vnpay') {
+        payMessage.innerHTML = '<span class="text-warning">⚠️ VNPay đang được phát triển, vui lòng chọn MoMo để test.</span>';
+      }
+    });
+  });
+</script>
+
+<%- include('partials/footer') %>

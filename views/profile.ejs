@@ -1,0 +1,133 @@
+<%- include('partials/header') %>
+
+<div class="profile-container">
+  <div class="profile-card">
+    <h2>Hồ sơ cá nhân</h2>
+    <p>Cập nhật thông tin của bạn để sử dụng dịch vụ thuận tiện hơn.</p>
+
+    <form action="/user/profile" method="POST" enctype="multipart/form-data">
+      <!-- Avatar hiển thị -->
+      <div class="avatar-wrapper">
+        <img
+          src="<%= data.avatar && data.avatar !== '' ? data.avatar : '/uploads/avatars/default-user.jpg' %>"
+          alt="Avatar người dùng"
+          class="avatar-preview"
+          id="avatarPreview"
+        />
+        <input type="file" name="avatar" id="avatar" class="avatar-input" onchange="previewAvatar(event)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Họ và tên</label>
+          <input type="text" name="name" value="<%= data?.name || '' %>" placeholder="Họ và tên">
+        </div>
+        <div class="form-group">
+          <label for="cccd">CCCD / CMND</label>
+          <input type="text" name="cccd" value="<%= data?.cccd || '' %>" placeholder="CCCD / CMND">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" name="email" value="<%= data?.email || '' %>" placeholder="Email">
+        </div>
+        <div class="form-group">
+          <label for="phone">Số điện thoại</label>
+          <input type="text" name="phone" value="<%= data?.phone || '' %>" placeholder="Số điện thoại">
+        </div>
+      </div>
+
+      <% if (success) { %>
+        <p class="success"><%= success %></p>
+      <% } %>
+      <% if (error) { %>
+        <p class="error"><%= error %></p>
+      <% } %>
+
+      <button type="submit" class="btn-primary">Lưu thay đổi</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+  function previewAvatar(event) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      document.getElementById('avatarPreview').src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+  }
+</script>
+
+<style>
+  .profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+  }
+
+  .profile-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 600px;
+    text-align: center;
+  }
+
+  .avatar-wrapper {
+    margin: 10px auto 20px;
+  }
+
+  .avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #007bff;
+  }
+
+  .avatar-input {
+    display: block;
+    margin: 10px auto;
+  }
+
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    text-align: left;
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .success {
+    color: green;
+    margin-bottom: 10px;
+  }
+
+  .error {
+    color: red;
+    margin-bottom: 10px;
+  }
+</style>

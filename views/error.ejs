@@ -1,0 +1,23 @@
+<%- include('partials/header') %>
+
+<div class="error-wrapper" style="min-height: 60vh; display: flex; justify-content: center; align-items: center; background-color: #f8fafc;">
+  <div class="error-card" style="background: #fff; padding: 40px 60px; border-radius: 16px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); text-align: center;">
+    <h2 style="color: #e74c3c; margin-bottom: 16px;">⚠️ Lỗi truy cập</h2>
+    <p style="margin-bottom: 24px; font-size: 16px;">
+      <%= message || 'Bạn cần đăng nhập để đặt phòng.' %>
+    </p>
+    <% if (typeof redirectUrl !== 'undefined' && redirectUrl) { %>
+      <a href="<%= redirectUrl %>" 
+         style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 8px;">
+         Đăng nhập ngay
+      </a>
+    <% } else { %>
+      <a href="/" 
+         style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 8px;">
+         Quay lại trang chủ
+      </a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

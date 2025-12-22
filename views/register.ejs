@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<section class="auth-section">
+  <div class="auth-card">
+    <h4 class="fw-bold mb-2 text-center">Tạo tài khoản mới</h4>
+    <p class="text-center text-muted small mb-4">Điền thông tin cá nhân để bắt đầu đặt phòng</p>
+
+    <% if (error) { %>
+      <div class="alert alert-danger py-2 text-center"><%= error %></div>
+    <% } %>
+
+    <form action="/auth/register" method="POST" enctype="multipart/form-data">
+      <div class="text-center mb-3">
+        <img id="avatarPreview" src="/img/default-avatar.png" alt="Avatar" class="rounded-circle mb-2" width="100" height="100" style="object-fit:cover;">
+        <div>
+          <input type="file" name="avatar" accept="image/*" class="form-control mt-2" onchange="previewAvatar(event)">
+        </div>
+      </div>
+
+      <input type="text" name="name" class="form-control mb-3" placeholder="Họ và tên" required>
+      <input type="text" name="cccd" class="form-control mb-3" placeholder="Số CCCD" required>
+      <input type="email" name="email" class="form-control mb-3" placeholder="you@example.com" required>
+      <input type="text" name="phone" class="form-control mb-3" placeholder="Số điện thoại">
+      <input type="password" name="password" class="form-control mb-3" placeholder="Mật khẩu" required>
+      <input type="password" name="confirmPassword" class="form-control mb-3" placeholder="Xác nhận mật khẩu" required>
+      <button type="submit" class="btn btn-primary w-100 fw-semibold rounded-3">Tạo tài khoản</button>
+    </form>
+
+    <p class="text-center small mt-3">
+      Đã có tài khoản? <a href="/auth/login">Đăng nhập</a>
+    </p>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
+
+<script>
+function previewAvatar(event) {
+  const [file] = event.target.files;
+  if (file) document.getElementById('avatarPreview').src = URL.createObjectURL(file);
+}
+</script>
+
+<style>
+.auth-section {
+  flex: 1; display: flex; justify-content: center; align-items: center;
+  min-height: calc(100vh - 140px);
+  background: linear-gradient(135deg,#ffffff,#ffffff);
+}
+.auth-card {
+  background: #fff; padding: 2.5rem 3rem; border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 420px;
+}
+</style>

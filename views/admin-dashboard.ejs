@@ -1,0 +1,223 @@
+<%- include('partials/header') %>
+
+<div class="container my-4 pt-4">
+  <ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link active" href="/admin/dashboard">Tổng quan</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/rooms">Phòng</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/bookings">Đơn đặt</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users">Khách hàng</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/discounts">Mã giảm giá</a></li>
+  </ul>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="card p-3 shadow-sm">
+        <div class="small text-muted">Người dùng</div>
+        <div class="h4 fw-bold"><%= usersCount %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 shadow-sm">
+        <div class="small text-muted">Phòng</div>
+        <div class="h4 fw-bold"><%= roomsCount %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 shadow-sm">
+        <div class="small text-muted">Đơn đặt</div>
+        <div class="h4 fw-bold"><%= bookingsCount %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 shadow-sm">
+        <div class="small text-muted">Doanh thu (đ)</div>
+        <div class="h4 fw-bold"><%= Number(totalRevenue || 0).toLocaleString('vi-VN') %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Doanh thu theo <%= range === 'day' ? 'Ngày' : (range === 'month' ? 'Tháng' : 'Năm') %></h5>
+      <div class="summary-boxes" style="display: flex; gap: 20px; margin-bottom: 20px;">
+  <div style="flex: 1; padding: 15px; background: #e3f2fd; border-radius: 10px; text-align: center;">
+    <h4>Tổng đơn hàng</h4>
+    <h2><%= totalOrders %></h2>
+  </div>
+  <div style="flex: 1; padding: 15px; background: #e8f5e9; border-radius: 10px; text-align: center;">
+    <h4>Tổng doanh thu</h4>
+    <h2><%= totalRevenue.toLocaleString('vi-VN') %> ₫</h2>
+  </div>
+</div>
+
+      <form id="statsForm" class="d-flex gap-2 align-items-center" method="GET" action="/admin/dashboard">
+        <select name="range" id="rangeSelect" class="form-select form-select-sm">
+          <option value="day" <%= range === 'day' ? 'selected' : '' %> >Ngày</option>
+          <option value="month" <%= range === 'month' ? 'selected' : '' %> >Tháng</option>
+          <option value="year" <%= range === 'year' ? 'selected' : '' %> >Năm</option>  
+        </select>
+
+        <input 
+  id="dateInput"
+  name="date"
+  class="form-control form-control-sm"
+  style="width:170px;"
+  type="<%= range === 'year' ? 'number' : (range === 'month' ? 'month' : 'date') %>"
+  min="2000" max="2100"
+  value="<%= range === 'year'
+    ? selectedDate.getFullYear()
+    : (range === 'month'
+      ? selectedDate.toISOString().slice(0,7)
+      : selectedDate.toISOString().split('T')[0]) %>"
+  placeholder="Chọn"
+/>
+
+<button class="btn btn-primary btn-sm" type="submit">Xem</button>
+
+      </form>
+    </div>
+
+    <div class="card p-3 shadow-sm mb-4">
+  <h5 class="mb-3">Biểu đồ doanh thu</h5>
+  <canvas id="revenueChart" height="120"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const chartLabels = <%- JSON.stringify(statsRows.map(r => r.key)) %>;
+  const chartValues = <%- JSON.stringify(statsRows.map(r => r.total)) %>;
+
+  if (chartLabels.length > 0) {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: 'Doanh thu (VNĐ)',
+          data: chartValues,
+          borderWidth: 1,
+          backgroundColor: 'rgba(54, 162, 235, 0.4)',
+          borderColor: 'rgba(54, 162, 235, 1)'
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+</script>
+
+<hr>
+<h5 class="mt-4">Chi tiết doanh thu</h5>
+<div class="table-responsive mt-3">
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>
+          <% if (selectedRange === 'day') { %>
+            Ngày
+          <% } else if (selectedRange === 'month') { %>
+            Tháng
+          <% } else { %>
+            Năm
+          <% } %>
+        </th>
+        <th>Đơn hàng</th>
+        <th>Doanh thu (đ)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!statsRows || statsRows.length === 0) { %>
+        <tr>
+          <td colspan="4" class="text-muted">Không có dữ liệu</td>
+        </tr>
+      <% } else { %>
+        <% statsRows.forEach((row, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><%= row.key %></td>
+            <td><%= row.count %></td>
+            <td><%= row.total.toLocaleString('vi-VN') %></td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+  // Thay đổi input[type] tương ứng với range selection
+  (function () {
+    const rangeSelect = document.getElementById('rangeSelect');
+    const dateInput = document.getElementById('dateInput');
+
+    function setInputType(range, currentVal) {
+      if (!dateInput) return;
+      if (range === 'day') {
+        dateInput.type = 'date';
+        dateInput.removeAttribute('min');
+        dateInput.removeAttribute('max');
+      } else if (range === 'month') {
+        // use month if supported
+        try { dateInput.type = 'month'; } catch (e) { dateInput.type = 'text'; }
+        dateInput.removeAttribute('min');
+        dateInput.removeAttribute('max');
+      } else {
+        dateInput.type = 'number';
+        dateInput.min = 2000;
+        dateInput.max = 2100;
+      }
+    }
+
+    // init
+    setInputType(rangeSelect.value, dateInput.value);
+
+    rangeSelect.addEventListener('change', function () {
+      setInputType(rangeSelect.value, dateInput.value);
+      dateInput.value = '';
+    });
+  })();
+</script>
+
+<script>
+  // === Biểu đồ đường xu hướng doanh thu ===
+  const lineCtx = document.getElementById('revenueLineChart').getContext('2d');
+
+  const lineChart = new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: chartData.labels,
+      datasets: [{
+        label: 'Doanh thu (₫)',
+        data: chartData.data,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Xu hướng doanh thu theo thời gian'
+        },
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>

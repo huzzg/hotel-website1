@@ -1,0 +1,124 @@
+<%- include('partials/header') %>
+
+<div class="container mt-5 mb-5">
+  <% if (room) { %>
+    <div class="row">
+      <!-- ẢNH PHÒNG -->
+      <div class="col-md-7">
+        <div class="card shadow-sm border-0 mb-4">
+          <img src="<%= room.image || '/images/default-room.jpg' %>" alt="<%= room.name %>" class="card-img-top rounded">
+          <div class="card-body">
+            <h4 class="fw-bold"><%= room.type %> - <%= room.roomNumber %></h4>
+            <p class="text-muted"><%= room.description || 'Không có mô tả' %></p>
+
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <div class="d-flex align-items-center">
+                <h5 class="text-primary fw-bold me-3"><%= room.price.toLocaleString('vi-VN') %>đ/đêm</h5>
+
+                <% if (reviews && reviews.length > 0) { %>
+                  <% 
+                    const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+                  %>
+                  <div class="text-warning">
+                    <% for (let i = 0; i < Math.round(avg); i++) { %>
+                      <i class="fa-solid fa-star"></i>
+                    <% } %>
+                    <small class="text-muted ms-1">(<%= avg %>/5 từ <%= reviews.length %> đánh giá)</small>
+                  </div>
+                <% } else { %>
+                  <small class="text-muted">Chưa có đánh giá</small>
+                <% } %>
+              </div>
+
+              <span class="badge bg-success">available</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KHUNG ĐẶT PHÒNG -->
+<div class="col-md-5">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h5 class="fw-bold mb-3">Đặt phòng</h5>
+
+      <!-- ✅ Sửa lại action để gửi tới đúng route đang có trong user.js -->
+      <form action="/user/book" method="POST">
+        <!-- Ẩn roomId để backend nhận -->
+        <input type="hidden" name="roomId" value="<%= room._id %>">
+
+        <div class="mb-3">
+          <label class="form-label">Check-in</label>
+          <input type="date" class="form-control" name="checkIn" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Check-out</label>
+          <input type="date" class="form-control" name="checkOut" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Số khách</label>
+          <input type="number" class="form-control" name="guests" min="1" value="1" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Mã giảm giá (nếu có)</label>
+          <input type="text" class="form-control" name="discountCode" placeholder="VD: SALE10">
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="fw-bold">Tổng tạm tính:</span>
+          <span class="fw-bold text-primary">
+            <%= room.price.toLocaleString('vi-VN') %>đ/đêm
+          </span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Đặt ngay</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+    <!-- KHU VỰC HIỂN THỊ ĐÁNH GIÁ -->
+    <div class="mt-5">
+      <h4 class="text-primary mb-3">Đánh giá của khách hàng</h4>
+
+      <% if (reviews && reviews.length > 0) { %>
+        <% reviews.forEach(review => { %>
+          <div class="card mb-3 shadow-sm border-0">
+            <div class="card-body d-flex align-items-start">
+              <img src="<%= review.user?.avatar || '/images/default-avatar.png' %>"
+                   alt="avatar"
+                   class="rounded-circle me-3"
+                   width="55" height="55"
+                   style="object-fit: cover;">
+              <div>
+                <h6 class="fw-bold mb-1"><%= review.user?.username || 'Người dùng ẩn danh' %></h6>
+                <div class="text-warning mb-1">
+                  <% for (let i = 0; i < 5; i++) { %>
+                    <% if (i < review.rating) { %>
+                      <i class="fa-solid fa-star"></i>
+                    <% } else { %>
+                      <i class="fa-regular fa-star"></i>
+                    <% } %>
+                  <% } %>
+                </div>
+                <p class="mb-1"><%= review.comment || 'Không có nội dung' %></p>
+                <small class="text-muted"><%= new Date(review.createdAt).toLocaleDateString('vi-VN') %></small>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p class="text-muted fst-italic">Phòng này hiện chưa có đánh giá nào.</p>
+      <% } %>
+    </div>
+
+  <% } else { %>
+    <p class="text-danger text-center mt-5">Không tìm thấy thông tin phòng.</p>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

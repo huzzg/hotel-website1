@@ -1,0 +1,46 @@
+<%- include('partials/header') %>
+<div class="container mt-5 pt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-9">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">Xác Nhận Đặt Phòng</h4>
+          <span class="badge bg-light text-dark">Trạng thái: <%= booking.status || 'pending' %></span>
+        </div>
+
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Phòng:</strong> <%= booking.roomId.roomNumber %> - <%= booking.roomId.type %></p>
+              <p><strong>Mô tả:</strong> <%= booking.roomId.description || '—' %></p>
+              <p><strong>Check-in:</strong> <%= new Date(booking.checkIn).toLocaleDateString('vi-VN') %></p>
+              <p><strong>Check-out:</strong> <%= new Date(booking.checkOut).toLocaleDateString('vi-VN') %></p>
+            </div>
+
+            <div class="col-md-6">
+              <p><strong>Số đêm:</strong> <%= Math.max(1, Math.round((new Date(booking.checkOut) - new Date(booking.checkIn)) / (1000*60*60*24))) %></p>
+              <p><strong>Giá/đêm:</strong> <%= (booking.roomId.price || 0).toLocaleString('vi-VN') %> đ</p>
+              <% if (booking.discountApplied) { %>
+                <p class="text-success"><strong>Giảm giá:</strong> -<%= (booking.discountApplied || 0).toLocaleString('vi-VN') %> đ</p>
+              <% } %>
+              <h4 class="text-danger"><strong>Tổng cộng: <%= (booking.totalPrice || 0).toLocaleString('vi-VN') %> đ</strong></h4>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="text-center">
+            <% if (booking.status === 'paid' || booking.status === 'confirmed') { %>
+              <a class="btn btn-success btn-lg" href="/user/history">Xem lịch sử & chi tiết</a>
+            <% } else { %>
+              <!-- chuyển sang trang payment hiển thị QR (momo / vnpay) -->
+              <a class="btn btn-success btn-lg" href="/payment/user?bookingId=<%= booking._id %>">Thanh Toán Ngay</a>
+              <a href="/" class="btn btn-secondary btn-lg">Quay về</a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

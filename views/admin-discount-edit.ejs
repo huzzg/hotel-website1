@@ -1,0 +1,43 @@
+<%- include('partials/header') %>
+
+<div class="container mt-4">
+  <form action="/admin/discounts/edit/<%= discount._id %>" method="POST">
+    <div class="container" style="max-width: 500px; margin: 40px auto; background: #fff; padding: 25px 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  <h3 class="text-center mb-4" style="font-weight: 600; color: #007bff;">Chỉnh sửa mã giảm giá</h3>
+  
+  <form method="POST" action="/admin/discounts/edit/<%= discount._id %>">
+    <div class="form-group mb-3">
+      <label for="code">Mã</label>
+      <input type="text" id="code" name="code" class="form-control" value="<%= discount.code %>" required>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="percent">Phần trăm (%)</label>
+      <input type="number" id="percent" name="percent" class="form-control" value="<%= discount.percent %>" required>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="startDate">Từ ngày</label>
+      <input type="date" id="startDate" name="startDate" class="form-control" value="<%= discount.startDate ? discount.startDate.toISOString().split('T')[0] : '' %>" required>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="endDate">Đến ngày</label>
+      <input type="date" id="endDate" name="endDate" class="form-control" value="<%= discount.endDate ? discount.endDate.toISOString().split('T')[0] : '' %>" required>
+    </div>
+
+    <div class="form-group mb-4">
+      <label for="active">Kích hoạt</label>
+      <select id="active" name="active" class="form-control">
+        <option value="true" <%= discount.active ? 'selected' : '' %>>Yes</option>
+        <option value="false" <%= !discount.active ? 'selected' : '' %>>No</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">💾 Lưu thay đổi</button>
+  </form>
+</div>
+  </form>
+</div>
+
+<%- include('partials/footer') %>

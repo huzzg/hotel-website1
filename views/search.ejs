@@ -1,0 +1,109 @@
+<%- include('partials/header') %>
+
+<div class="container mt-5">
+  <h2 class="page-title text-center mb-4">Tìm kiếm phòng</h2>
+
+<!-- HERO / BANNER -->
+<section class="search-banner">
+  <div class="banner-overlay"></div>
+  <div class="banner-content text-center">
+    <h1 class="banner-title">Tìm kiếm phòng hoàn hảo cho kỳ nghỉ của bạn</h1>
+    <p class="banner-subtitle">Đặt phòng dễ dàng - Ưu đãi hấp dẫn - Trải nghiệm đẳng cấp</p>
+  </div>
+</section>
+
+  <!-- SEARCH FORM -->
+  <form id="searchForm" method="get" action="/search" class="card search-card shadow-sm mb-5 border-0 rounded-4 p-4">
+    <div class="row gy-3 gx-3 align-items-end">
+
+      <div class="col-lg-5 col-md-12">
+        <label class="form-label fw-semibold">Từ khóa (tên/mã/loại)</label>
+        <input class="form-control" name="q" value="<%= q || '' %>" placeholder="Deluxe, D101...">
+      </div>
+
+      <div class="col-lg-2 col-md-6">
+        <label class="form-label fw-semibold">Loại phòng</label>
+        <select class="form-select" name="type">
+          <option value="" <%= !type ? 'selected' : '' %>>Tất cả</option>
+          <option value="Standard" <%= type === 'Standard' ? 'selected' : '' %>>Standard</option>
+          <option value="Superior" <%= type === 'Superior' ? 'selected' : '' %>>Superior</option>
+          <option value="Deluxe" <%= type === 'Deluxe' ? 'selected' : '' %>>Deluxe</option>
+          <option value="Suite" <%= type === 'Suite' ? 'selected' : '' %>>Suite</option>
+        </select>
+      </div>
+
+      <div class="col-lg-2 col-md-6">
+        <label class="form-label fw-semibold">Giá từ</label>
+        <input class="form-control" name="min" inputmode="numeric" value="<%= min || '' %>" placeholder="Từ...">
+      </div>
+
+      <div class="col-lg-2 col-md-6">
+        <label class="form-label fw-semibold">Giá đến</label>
+        <input class="form-control" name="max" inputmode="numeric" value="<%= max || '' %>" placeholder="Đến...">
+      </div>
+
+      <div class="col-lg-1 col-md-6 d-flex justify-content-lg-end">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold">Tìm<br>phòng</button>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label fw-semibold">Nhận phòng</label>
+        <input class="form-control" type="date" name="checkIn" value="<%= checkIn || '' %>">
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label fw-semibold">Trả phòng</label>
+        <input class="form-control" type="date" name="checkOut" value="<%= checkOut || '' %>">
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label fw-semibold">Sắp xếp</label>
+        <select class="form-select" name="sort">
+          <option value="priceAsc" <%= sort==='priceAsc' ? 'selected' : '' %>>Giá tăng dần</option>
+          <option value="priceDesc" <%= sort==='priceDesc' ? 'selected' : '' %>>Giá giảm dần</option>
+          <option value="newest" <%= sort==='newest' ? 'selected' : '' %>>Mới nhất</option>
+        </select>
+      </div>
+
+    </div>
+  </form>
+
+  <!-- SEARCH RESULTS -->
+  <% if (rooms && rooms.length > 0) { %>
+    <div class="results-header mb-4">
+      <h4>Kết quả tìm thấy <%= rooms.length %> phòng 
+        <% if (type) { %>
+          <span class="highlight-type">thuộc loại <%= type %></span>
+        <% } %>
+      </h4>
+    </div>
+
+    <div class="room-grid">
+      <% rooms.forEach(room => { 
+          let img = room.image || '';
+          if (img && img[0] !== '/') img = '/' + img;
+      %>
+        <div class="room-card shadow-sm rounded-4">
+          <div class="room-image">
+            <a href="/user/room/<%= room._id %>">
+              <img src="<%= img || '/images/default-room.jpg' %>" alt="Phòng <%= room.name %>">
+            </a>
+          </div>
+          <div class="room-info p-3">
+            <h5 class="room-name"><%= room.type %> - <%= room.roomNumber || '' %></h5>
+            <p class="room-price">Giá: <%= (room.price || 0).toLocaleString('vi-VN') %> đ/đêm</p>
+            <a href="/user/room/<%= room._id %>" class="room-btn w-100">Xem & Đặt</a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+  <% } else { %>
+    <div class="text-center py-5 text-muted">
+      <img src="/images/empty.svg" width="180" class="mb-3" alt="">
+      <p>Không tìm thấy phòng phù hợp với tiêu chí tìm kiếm của bạn.</p>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

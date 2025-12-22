@@ -1,0 +1,145 @@
+<%- include('partials/header') %>
+
+<style>
+  .review-page {
+    margin-top: 90px;
+    text-align: center;
+  }
+
+  .review-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 30px;
+    max-width: 650px;
+    margin: 0 auto 50px;
+    transition: all 0.3s ease;
+  }
+
+  .review-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  }
+
+  .review-header {
+    margin-bottom: 25px;
+  }
+
+  .review-header h2 {
+    font-weight: 600;
+    color: #007bff;
+  }
+
+  .review-list {
+    max-width: 750px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  .review-item {
+    display: flex;
+    align-items: flex-start;
+    background: #fff;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .review-item img {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    margin-right: 15px;
+  }
+
+  .review-stars {
+    color: #f4c150;
+  }
+
+  .no-review {
+    color: #777;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .submit-btn {
+    background: #007bff;
+    border: none;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.3s;
+  }
+
+  .submit-btn:hover {
+    background: #0056b3;
+  }
+
+  textarea {
+    resize: none;
+  }
+</style>
+
+<div class="container review-page">
+  <div class="review-card">
+    <div class="review-header">
+      <h2>Đánh giá phòng: <%= roomDisplayName %></h2>
+      <% if (room && room.image) { %>
+        <img src="<%= room.image %>" alt="<%= room.name %>" style="max-width:100%; border-radius: 10px; margin-top: 15px;">
+      <% } %>
+    </div>
+
+    <% if (currentUser) { %>
+      <form action="/review/<%= room._id %>" method="POST" class="text-start">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Số sao (1-5)</label>
+          <select name="rating" class="form-select" required>
+            <option value="">-- Chọn số sao --</option>
+            <option value="1">⭐ 1</option>
+            <option value="2">⭐⭐ 2</option>
+            <option value="3">⭐⭐⭐ 3</option>
+            <option value="4">⭐⭐⭐⭐ 4</option>
+            <option value="5">⭐⭐⭐⭐⭐ 5</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Nội dung đánh giá</label>
+          <textarea name="comment" class="form-control" rows="4" placeholder="Chia sẻ trải nghiệm của bạn..." required></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn w-100">Gửi đánh giá</button>
+      </form>
+    <% } else { %>
+      <div class="alert alert-warning mt-3">
+        Bạn cần <a href="/auth/login" class="fw-bold text-decoration-none">đăng nhập</a> để gửi đánh giá.
+      </div>
+    <% } %>
+  </div>
+
+  <div class="review-list">
+    <h4 class="text-center mb-4">Đánh giá gần đây</h4>
+
+    <% if (reviews && reviews.length > 0) { %>
+      <% reviews.forEach(r => { %>
+        <div class="review-item">
+          <img src="<%= r.user?.avatar || '/images/default-avatar.png' %>" alt="avatar">
+          <div>
+            <h6 class="mb-1"><%= r.user?.username || 'Người dùng ẩn danh' %></h6>
+            <div class="review-stars mb-1">
+              <% for (let i = 0; i < r.rating; i++) { %>⭐<% } %>
+            </div>
+            <p><%= r.comment %></p>
+            <small class="text-muted"><%= new Date(r.createdAt).toLocaleDateString('vi-VN') %></small>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p class="no-review">Chưa có đánh giá nào cho phòng này.</p>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

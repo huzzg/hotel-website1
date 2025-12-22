@@ -1,0 +1,49 @@
+<%- include('partials/header') %>
+
+<section class="auth-section">
+  <div class="auth-card">
+    <h4 class="fw-bold mb-2 text-center">Đăng nhập tài khoản</h4>
+    <p class="text-center text-muted small mb-4">Hệ thống quản lý khách sạn Phenikaa</p>
+
+    <% if (error) { %>
+      <div class="alert alert-danger py-2 text-center"><%= error %></div>
+    <% } %>
+
+    <form action="/auth/login" method="POST">
+      <div class="mb-3">
+        <input type="text" name="identifier" value="<%= identifier || '' %>" class="form-control" placeholder="Email hoặc Tên đăng nhập" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Mật khẩu" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 fw-semibold rounded-3">Đăng nhập ngay</button>
+    </form>
+
+    <p class="text-center small mt-3">
+      Chưa có tài khoản? <a href="/auth/register">Đăng ký ngay</a>
+    </p>
+    <p class="text-center small mt-1">
+      <a href="/auth/forgot-password">Quên mật khẩu?</a>
+    </p>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
+
+<style>
+.auth-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 140px);
+  width: 100%;
+}
+.auth-card {
+  background: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  width: 380px;
+}
+</style>

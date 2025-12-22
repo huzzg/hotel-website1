@@ -1,0 +1,70 @@
+<%- include('partials/header') %>
+
+<div class="container my-4">
+  <ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Tổng quan</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/rooms">Phòng</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/admin/bookings">Đơn đặt</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users">Khách hàng</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/discounts">Mã giảm giá</a></li>
+  </ul>
+
+  <div class="card p-3 border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+        <tr>
+          <th>#</th><th>Phòng</th><th>Người đặt</th><th>Check-in</th><th>Check-out</th><th>Tổng tiền</th><th>Trạng thái</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <% bookings.forEach((b, i) => { %>
+          <tr>
+            <td><%= i+1 %></td>
+            <td>
+              <div class="small fw-semibold"><%= b.roomId?.roomNumber %> · <%= b.roomId?.type %></div>
+              <div class="text-muted small"><%= (b.roomId?.price||0).toLocaleString('vi-VN') %>đ/đêm</div>
+            </td>
+            <td>
+              <div class="fw-semibold"><%= b.userId?.username %></div>
+              <div class="text-muted small"><%= b.userId?.email %></div>
+            </td>
+            <td><%= new Date(b.checkIn).toLocaleDateString('vi-VN') %></td>
+            <td><%= new Date(b.checkOut).toLocaleDateString('vi-VN') %></td>
+            <td><%= Number(b.totalPrice||0).toLocaleString('vi-VN') %>đ</td>
+            <td>
+              <% 
+                let badgeClass = 'bg-secondary';
+                if (b.status === 'paid') badgeClass = 'bg-success';
+                else if (b.status === 'confirmed' || b.status === 'checked_in') badgeClass = 'bg-primary';
+                else if (b.status === 'cancelled') badgeClass = 'bg-danger';
+              %>
+              <span class="badge <%= badgeClass %>"><%= b.status %></span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex gap-2 justify-content-end align-items-center">
+                <form action="/admin/bookings/<%= b._id %>/status" method="post" class="d-flex gap-2 align-items-center">
+                  <select name="status" class="form-select form-select-sm" style="width:160px">
+                    <option <%= b.status==='pending'?'selected':'' %> value="pending">Chờ xác nhận</option>
+                    <option <%= b.status==='checked_in'?'selected':'' %> value="checked_in">Đang thuê</option>
+                    <option <%= b.status==='checked_out'?'selected':'' %> value="checked_out">Đã trả phòng</option>
+                    <option <%= b.status==='cancelled'?'selected':'' %> value="cancelled">Đã hủy</option>
+                  </select>
+                  <button class="btn btn-sm btn-primary">Cập nhật</button>
+                </form>
+
+                <!-- Delete form -->
+                <form action="/admin/bookings/<%= b._id %>/delete" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa đơn này? Hành động không thể hoàn tác.');">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

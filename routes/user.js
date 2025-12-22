@@ -1,0 +1,340 @@
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const bcrypt = require('bcrypt');
+
+const User = require('../models/User');
+const Booking = require('../models/Booking');
+const Room = require('../models/Room');
+const Payment = require('../models/Payment');
+const Discount = require('../models/Discount');
+const userController = require('../controllers/userController');
+
+// =============== MIDDLEWARE: XÁC THỰC NGƯỜI DÙNG ===============
+function requireAuth(req, res, next) {
+  try {
+    const sessionUser = req.session?.user;
+    if (sessionUser && sessionUser.id) {
+      req.user = sessionUser;
+      return next();
+    }
+
+    const token = req.cookies?.token;
+    if (token) {
+      const jwt = require('jsonwebtoken');
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      if (payload && payload.id) {
+        req.user = payload;
+        return next();
+      }
+    }
+    // ❌ Không có session hoặc token hợp lệ -> chặn
+    console.warn("⚠️ Người dùng chưa đăng nhập hoặc phiên đã hết hạn");
+    res.clearCookie('connect.sid');
+    return res.status(401).render('error', {
+  message: 'Bạn cần đăng nhập để đặt phòng.',
+  redirectUrl: '/auth/login'
+  });
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.clearCookie('connect.sid');
+    return res.status(401).render('error', {
+  message: 'Bạn cần đăng nhập để đặt phòng.',
+  redirectUrl: '/auth/login'
+});
+  }
+}
+
+
+// =============== CẤU HÌNH MULTER CHO AVATAR ===============
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '../public/uploads/avatars');
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
+});
+const upload = multer({ storage });
+
+// =============== TRANG HỒ SƠ CÁ NHÂN ===============
+router.get(['/profile', '/user/profile'], requireAuth, async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id).lean();
+    if (!me) return res.redirect('/auth/login');
+
+    const data = {
+      avatar: me.avatar || '/uploads/avatars/default-avatar.jpg',
+      name: me.profile?.name || '',
+      cccd: me.profile?.cccd || '',
+      email: me.email || '',
+      phone: me.phone || '',
+    };
+
+    res.render('profile', { title: 'Hồ sơ cá nhân', data, success: null, error: null });
+  } catch (err) {
+    console.error('GET /profile error:', err);
+    res.render('profile', { title: 'Hồ sơ cá nhân', data: {}, success: null, error: 'Lỗi tải hồ sơ!' });
+  }
+  router.get('/profile', requireAuth, userController.getProfile);
+  router.post('/profile', requireAuth, userController.upload.single('avatar'), userController.updateProfile);
+});
+
+// =============== CẬP NHẬT HỒ SƠ CÁ NHÂN ===============
+router.post(['/profile', '/user/profile'], requireAuth, upload.single('avatar'), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.redirect('/auth/login');
+
+    if (!user.profile) user.profile = {};
+
+    const { name, email, phone, cccd } = req.body;
+
+    if (req.file) {
+      if (user.avatar && user.avatar !== '/uploads/avatars/default-avatar.jpg') {
+        const oldPath = path.join(__dirname, '../public', user.avatar);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      user.avatar = '/uploads/avatars/' + req.file.filename;
+    }
+
+    user.profile.name = name || '';
+    user.profile.cccd = cccd || '';
+    user.email = email || '';
+    user.phone = phone || '';
+
+    await user.save();
+
+    const data = {
+      avatar: user.avatar || '/uploads/avatars/default-avatar.jpg',
+      name: user.profile.name,
+      cccd: user.profile.cccd,
+      email: user.email,
+      phone: user.phone,
+    };
+
+    res.render('profile', {
+      title: 'Hồ sơ cá nhân',
+      data,
+      success: '✅ Cập nhật hồ sơ thành công!',
+      error: null,
+    });
+  } catch (err) {
+    console.error('POST /profile error:', err);
+    res.render('profile', {
+      title: 'Hồ sơ cá nhân',
+      data: {},
+      success: null,
+      error: '❌ Có lỗi xảy ra khi cập nhật hồ sơ!',
+    });
+  }
+});
+
+// =============== LỊCH SỬ ĐẶT PHÒNG ===============
+router.get('/history', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookings = await Booking.find({ userId })
+      .populate({ path: 'roomId', select: 'roomNumber type price name images' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.render('history', { title: 'Lịch sử đặt phòng', bookings, user: req.user });
+  } catch (err) {
+    console.error('GET /history error:', err);
+    res.status(500).send('Lỗi server, thử lại sau.');
+  }
+router.get('/history', requireAuth, userController.getHistory);
+});
+
+// =============== ĐẶT PHÒNG ===============
+router.get('/booking/:roomId', requireAuth, async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId).lean();
+    if (!room) return res.status(404).send('Không tìm thấy phòng');
+
+    res.render('booking', { title: 'Đặt phòng', room, user: req.user });
+  } catch (err) {
+    console.error('GET /booking/:roomId error:', err);
+    res.status(500).send('Lỗi server');
+  }
+router.get('/booking-confirm', requireAuth, userController.viewBookingDetail);
+});
+
+// ✅ Route hiển thị chi tiết phòng
+router.get("/room/:roomId", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const Room = require("../models/Room");
+    const Review = require("../models/Review");
+
+    // Lấy thông tin phòng
+    const room = await Room.findById(roomId).lean();
+    if (!room) {
+      return res.status(404).render("error", { message: "Không tìm thấy phòng này" });
+    }
+
+    // Lấy các đánh giá liên quan đến phòng đó
+    const reviews = await Review.find({ room: roomId })
+      .populate("user", "username avatar") // lấy username + avatar người đánh giá
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.render("booking", {
+      room,
+      reviews,
+      user: req.session.user, // để header nhận đúng người đăng nhập
+    });
+  } catch (err) {
+    console.error("❌ Lỗi khi hiển thị chi tiết phòng:", err);
+    res.status(500).render("error", { message: "Lỗi khi hiển thị chi tiết phòng" });
+  }
+});
+
+// =============== THANH TOÁN ===============
+router.post('/payment', requireAuth, async (req, res) => {
+  try {
+    const { roomId, checkIn, checkOut, totalPrice, discountCode } = req.body;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).send('Không tìm thấy phòng');
+
+    let discountValue = 0;
+    if (discountCode) {
+      const discount = await Discount.findOne({ code: discountCode });
+      if (discount && discount.active) discountValue = discount.value;
+    }
+
+    const finalPrice = totalPrice - discountValue;
+
+    const booking = new Booking({
+      userId: req.user.id,
+      roomId,
+      checkIn,
+      checkOut,
+      totalPrice: finalPrice
+    });
+
+    await booking.save();
+
+    const payment = new Payment({
+      bookingId: booking._id,
+      userId: req.user.id,
+      amount: finalPrice,
+      status: 'paid'
+    });
+
+    await payment.save();
+
+    res.render('success', {
+      title: 'Thanh toán thành công',
+      booking,
+      payment,
+      message: '✅ Cảm ơn bạn đã đặt phòng!'
+    });
+  } catch (err) {
+    console.error('POST /payment error:', err);
+    res.status(500).send('Lỗi xử lý thanh toán');
+  }
+});
+
+// =============== GIẢM GIÁ ===============
+router.post('/discount/check', requireAuth, async (req, res) => {
+  try {
+    const { code } = req.body;
+    const discount = await Discount.findOne({ code, active: true });
+    if (!discount) return res.json({ valid: false, message: '❌ Mã giảm giá không hợp lệ!' });
+    res.json({ valid: true, value: discount.value });
+  } catch (err) {
+    console.error('POST /discount/check error:', err);
+    res.json({ valid: false, message: 'Lỗi kiểm tra mã giảm giá!' });
+  }
+});
+
+module.exports = router;
+
+// =============== XỬ LÝ ĐẶT PHÒNG ===============
+router.post('/book', requireAuth, async (req, res) => {
+  try {
+    const { roomId, checkIn, checkOut, guests, discountCode } = req.body;
+
+    if (!req.user || !req.user.id) {
+      console.warn("⚠️ Người dùng chưa đăng nhập - chặn đặt phòng.");
+      return res.status(401).render('error', {
+        message: 'Bạn cần đăng nhập để đặt phòng!',
+        redirectUrl: '/auth/login'
+      });
+    }
+
+    const currentUser = req.user;
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).send('Không tìm thấy phòng.');
+
+    // 👉 Tính giá dựa trên số đêm
+    const inDate = new Date(checkIn);
+    const outDate = new Date(checkOut);
+    const nights = Math.max(1, (outDate - inDate) / (1000 * 60 * 60 * 24));
+    let totalPrice = room.price * nights;
+
+    // 👉 Áp mã giảm giá nếu có
+    let discountValue = 0;
+    if (discountCode) {
+      const discount = await Discount.findOne({ code: discountCode });
+      if (discount && discount.active) {
+        discountValue = (totalPrice * discount.value) / 100;
+      }
+    }
+
+    const finalPrice = totalPrice - discountValue;
+
+    const booking = await Booking.create({
+      userId: currentUser._id || currentUser.id,
+      roomId,
+      checkIn,
+      checkOut,
+      guests,
+      totalPrice: finalPrice,
+      status: 'pending',
+    });
+
+    console.log("✅ Đặt phòng thành công:", booking._id);
+    res.redirect('/user/history');
+  } catch (err) {
+    console.error('❌ Lỗi khi đặt phòng:', err);
+    res.status(500).send('Lỗi xử lý đặt phòng.');
+  }
+});
+
+
+// ✅ Thêm route Giới thiệu (đặt TRƯỚC module.exports)
+router.get('/about', (req, res) => {
+  res.render('about', { title: 'Giới thiệu' });
+});
+
+
+router.get("/error", (req, res) => {
+  const message = req.query.message || "Bạn cần đăng nhập để đặt phòng.";
+  const redirectUrl = req.query.redirect || "/auth/login";
+  res.render("error", { message, redirectUrl });
+});
+
+// ==========================
+// ĐÁNH GIÁ PHÒNG
+// ==========================
+const reviewController = require("../controllers/reviewController");
+
+// Hiển thị trang đánh giá phòng
+router.get("/review/:roomId", reviewController.getRoomReviews);
+
+// Gửi đánh giá phòng
+router.post("/review/:roomId", reviewController.addReview);
+
+
+module.exports = router;
+
+
+
+
+

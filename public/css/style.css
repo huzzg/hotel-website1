@@ -1,0 +1,667 @@
+/* -------------------- RESET & CORE -------------------- */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #f6fbfc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #153544;
+  line-height: 1.4;
+}
+
+/* ensure header/footer + main layout */
+.site-main { flex: 1 0 auto; }
+/* add top padding so fixed header doesn't overlap content
+   -> giảm nhẹ so với cũ để tránh stripe trắng */
+.site-main { padding-top: 64px; padding-bottom: 0; }
+.site-main .container { max-width: 1180px; margin: 0 auto; padding: 22px 18px; box-sizing: border-box; }
+
+/* -------------------- NAVBAR -------------------- */
+
+/* make navbar fixed so it always stays on top; ensure no layout jump */
+.topbar, nav.navbar, .navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2000; /* below modals but above page content */
+  margin: 0;
+  padding: 12px 0;
+  background: #05c6e8;
+  box-shadow: 0 3px 8px rgba(4,20,35,0.06);
+}
+.navbar .nav-link { color: #ffffff !important; font-weight: 600; }
+
+/* small safe area under fixed header to avoid thin white line */
+/* nếu template có header-spacer, ẩn nó để tránh stripe trắng */
+.header-spacer { display: none; height: 0; }
+
+/* -------------------- SEARCH CARD STYLES (NEW, đẹp hơn) -------------------- */
+
+.card.search-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), #ffffff);
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid rgba(19,53,68,0.04);
+  box-shadow: 0 10px 30px rgba(2,20,40,0.06);
+}
+
+/* create inner grid spacing for form */
+.search-inner .form-label {
+  font-size: 0.9rem;
+  color: #577a87;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* input and selects */
+.card.search-card .form-control,
+.card.search-card .form-select {
+  border-radius: 10px;
+  border: 1px solid #e6eef2;
+  padding: 10px 12px;
+  height: 46px;
+  box-shadow: none;
+  background: #fff;
+  transition: box-shadow .18s ease, transform .12s ease;
+}
+.card.search-card .form-control:focus,
+.card.search-card .form-select:focus {
+  box-shadow: 0 6px 18px rgba(6,135,165,0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* search button */
+.btn-accent {
+  background: linear-gradient(180deg,#19d0e9,#06c8e0);
+  border: none;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(6,200,220,0.12);
+  border-radius: 10px;
+  padding: 12px 10px;
+  min-width: 62px;
+}
+.btn-accent:active { transform: translateY(1px); box-shadow: 0 6px 12px rgba(6,200,220,0.09); }
+
+/* taller button with two-line text */
+.btn-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: normal;
+  text-align: center;
+  line-height: 1;
+}
+
+/* input with small calendar icon overlay */
+.input-with-icon {
+  position: relative;
+}
+.input-with-icon .icon-calendar {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.7;
+  font-size: 16px;
+}
+
+/* make rows consistent on small screens */
+@media (max-width: 767px) {
+  .card.search-card { padding: 14px; border-radius: 12px; }
+  .btn-search { padding: 10px 8px; }
+}
+
+/* -------------------- ROOM CARDS -------------------- */
+
+.room-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(10,20,30,0.04);
+  box-shadow: 0 6px 18px rgba(4,20,35,0.04);
+
+  /* HOVER EFFECT ADDED */
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms cubic-bezier(.2,.9,.2,1);
+  transform-origin: center center;
+}
+.room-card .card-body { padding: 18px; }
+.room-card .card-title { margin-bottom: 6px; font-weight: 700; color: #10323a; }
+
+/* ---------- HOVER ZOOM + LIFT EFFECT ---------- */
+/* scale - translateY - shadow */
+.room-card:hover,
+.room-card:focus-within {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(6,30,50,0.12);
+}
+
+/* zoom ảnh */
+.room-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  transition: transform 420ms cubic-bezier(.2,.9,.2,1);
+}
+.room-card:hover img,
+.room-card:focus-within img {
+  transform: scale(1.06);
+  object-fit: cover;
+}
+
+/* body trượt nhẹ */
+.room-card .card-body {
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1);
+}
+.room-card:hover .card-body,
+.room-card:focus-within .card-body {
+  transform: translateY(-3px);
+}
+
+/* disable effect in mobile */
+@media (max-width: 767px) {
+  .room-card,
+  .room-card:hover {
+    transform: none;
+    box-shadow: 0 6px 18px rgba(4,20,35,0.04);
+  }
+  .room-card img,
+  .room-card:hover img {
+    transform: none;
+  }
+}
+
+/* -------------------- MODAL / FIXES FOR NAVBAR OVERLAP -------------------- */
+
+/* Ensure bootstrap modal appears below navbar but not hidden by it.
+   Add extra top padding so modal dialog is fully visible on smaller screens. */
+.modal {
+  z-index: 2100; /* above navbar */
+}
+.modal-backdrop {
+  z-index: 2050;
+}
+/* push modal down so header (fixed) doesn't cut it off */
+.modal-dialog {
+  margin-top: 86px;
+}
+
+/* In some pages the modal header felt clipped; this gives a little breathing room */
+@media (max-width: 576px) {
+  .modal-dialog { margin-top: 64px; }
+}
+
+/* -------------------- FOOTER -------------------- */
+
+.site-footer {
+  background: #0b1522;
+  color: #fff;
+  padding: 18px 0;
+  text-align: center;
+  margin-top: 0;
+  position: relative;
+}
+
+/* small helpers */
+.page-title { margin-bottom: 18px; font-weight: 700; color: #13343f; }
+
+/* -------------------- SMALL TWEAKS & RESPONSIVE -------------------- */
+
+@media (max-width: 1199px) { .site-main .container { max-width: 1000px; } }
+@media (max-width: 991px)  { .site-main .container { max-width: 720px; } }
+@media (max-width: 767px)  { .site-main .container { padding-left: 12px; padding-right: 12px; } }
+
+/* little cosmetic helpers for admin tables/modal */
+.alert-inline { margin-bottom: 12px; }
+
+/* ---------- thêm style cho khu ƯU ĐÃI ---------- */
+.discounts-section {
+  padding: 40px 0;
+  background: transparent;
+}
+.discounts-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.discounts-title {
+  font-size: 26px;
+  color: #0e62ff;
+  margin-bottom: 18px;
+  font-weight: 700;
+}
+
+/* extra: nếu muốn áp dụng riêng cho trang auth (đăng nhập/register) */
+/* ví dụ template có body class "auth-page" thì bẻ padding để không có khoảng trắng lớn */
+.auth-page .site-main { padding-top: 18px; padding-bottom: 18px; }
+
+/* style cho history cards */
+.history-card {
+  gap: 16px;
+}
+
+.history-thumb {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  background: #f0f0f0;
+  display: block;
+}
+
+/* responsive nhỏ */
+@media (max-width: 576px) {
+  .history-thumb { width: 80px; height: 64px; }
+}
+
+/* === HERO BANNER === */
+.hero-banner {
+  position: relative;
+  height: 85vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-banner .overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.hero-banner .hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+}
+
+.hero-banner h1, .hero-banner p {
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+.hero-banner h2, .hero-banner p {
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+
+.search-box {
+  max-width: 900px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, #00bcd4, #0097a7);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+.btn-accent:hover {
+  background: linear-gradient(135deg, #00acc1, #00838f);
+}
+
+.discount-percent {
+  display: inline-block;
+  background: linear-gradient(135deg, #00c3ff, #0078ff);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+
+
+.room-type-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.room-type-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+}
+
+.room-type-header:hover {
+  background: rgba(0, 120, 255, 0.05);
+}
+
+.type-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.type-icon {
+  width: 42px;
+  height: 42px;
+  background: #e8f3ff;
+  color: #0078ff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.room-type-body {
+  display: none;
+  padding: 0 20px 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.room-type-card.active .room-type-body {
+  display: block;
+}
+
+.room-type-card ul {
+  padding-left: 18px;
+  margin-bottom: 10px;
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #0078ff;
+  transition: transform 0.3s ease;
+}
+
+.room-type-card.active .toggle-btn {
+  transform: rotate(180deg);
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(-6px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+.discover-container {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.discover-left img {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transition: all 0.5s ease;
+}
+
+@media (max-width: 992px) {
+  .discover-container { flex-direction: column; align-items: center; }
+  .discover-left img { max-width: 100%; }
+}
+
+.discover-container {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.discover-left img {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transition: opacity 0.5s ease;
+}
+
+.discover-right {
+  flex: 1;
+}
+
+.room-preview.hidden {
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+  transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.room-preview.visible {
+  opacity: 1;
+  visibility: visible;
+  height: auto;
+}
+
+#viewAllContainer.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+#viewAllContainer.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.results-header h4 {
+  font-weight: 600;
+  color: #1e293b;
+}
+.highlight-type {
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Grid layout */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Card style */
+.room-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.room-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Image */
+.room-image img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+/* Info */
+.room-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #0f172a;
+}
+.room-price {
+  color: #007bff;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.room-btn {
+  display: inline-block;
+  text-align: center;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 10px 0;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+.room-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+}
+
+/* ======= BANNER ======= */
+.search-banner {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background: url('/images/search-banner.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+  text-align: center;
+}
+
+.banner-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.banner-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* ======= SEARCH FORM ======= */
+.search-form-wrapper {
+  margin-top: -80px; /* đẩy form chồng lên banner */
+  position: relative;
+  z-index: 10;
+}
+
+.search-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* ==== SWIPER ƯU ĐÃI ==== */
+.discounts-section {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.discount-swiper {
+  position: relative;
+  overflow: hidden;
+  padding: 40px 0;
+}
+
+.discount-swiper .swiper-wrapper {
+  display: flex;
+  align-items: stretch;
+}
+
+.discount-swiper .swiper-slide {
+  flex-shrink: 0;
+  width: 320px;
+  margin-right: 40px;
+  transition: transform 0.3s ease;
+}
+
+.discount-swiper .swiper-slide:hover {
+  transform: translateY(-5px);
+}
+
+.discount-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+}
+
+.discount-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.discount-percent {
+  font-size: 26px;
+  font-weight: bold;
+  color: #e74c3c;
+}
+
+.discount-status.active {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.discount-status.expired {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.copy-btn {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: #2980b9;
+}
+
+.swiper-button-prev,
+.swiper-button-next {
+  color: #333;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.swiper-button-prev::after,
+.swiper-button-next::after {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+
+
+

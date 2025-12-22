@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "68e6737d6c46c4af107daa3d",
+    "roomNumber": "101",
+    "type": "Standard",
+    "price": 100,
+    "status": "booked",
+    "location": "Đà Nẵng",
+    "__v": 0
+  },
+  {
+    "_id": "68e6737d6c46c4af107daa3e",
+    "roomNumber": "102",
+    "type": "Deluxe",
+    "price": 150,
+    "status": "available",
+    "location": "Hà Nội",
+    "__v": 0
+  },
+  {
+    "_id": "68e6737d6c46c4af107daa3f",
+    "roomNumber": "103",
+    "type": "Suite",
+    "price": 200,
+    "status": "available",
+    "location": "Phuket",
+    "__v": 0
+  }
+]
