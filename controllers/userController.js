@@ -372,6 +372,60 @@ if (range === "day") {
   }
 };
 
+// ==================== GỬI EMAIL XÁC NHẬN ĐẶT PHÒNG ====================
+exports.sendBookingEmail = async (req, res) => {
+  try {
+    const userId = req.session.user?._id;
+    const { bookingId } = req.body;
+
+    if (!userId) return res.status(401).json({ message: "Bạn chưa đăng nhập!" });
+
+    const booking = await Booking.findById(bookingId).populate("roomId").lean();
+    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng." });
+
+    const user = await User.findById(userId);
+    if (!user || !user.email)
+      return res.status(400).json({ message: "Không tìm thấy email người dùng." });
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER, // bạn đã dùng để gửi mã OTP
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Hotel Phenikaa" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Xác nhận đặt phòng tại Hotel Phenikaa",
+      html: `
+        <h2>Xin chào ${user.username || "Quý khách"},</h2>
+        <p>Cảm ơn bạn đã đặt phòng tại <strong>Hotel Phenikaa</strong>.</p>
+        <h3>Thông tin đặt phòng:</h3>
+        <ul>
+          <li><b>Phòng:</b> ${booking.roomId.name || booking.roomId.type}</li>
+          <li><b>Giá tiền:</b> ${booking.totalPrice.toLocaleString()}₫</li>
+          <li><b>Check-in:</b> ${new Date(booking.checkIn).toLocaleDateString("vi-VN")}</li>
+          <li><b>Check-out:</b> ${new Date(booking.checkOut).toLocaleDateString("vi-VN")}</li>
+          <li><b>Trạng thái:</b> ${booking.status}</li>
+        </ul>
+        <p>Chúc bạn có trải nghiệm tuyệt vời!</p>
+        <p><i>Trân trọng,<br>Hotel Phenikaa</i></p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: "✅ Đã gửi thông tin đặt phòng qua email!" });
+  } catch (error) {
+    console.error("❌ Lỗi gửi email:", error);
+    res.status(500).json({ success: false, message: "Lỗi gửi email, vui lòng thử lại." });
+  }
+};
+
+
 // ==================== LOGOUT ====================
 exports.logout = (req, res) => {
   req.session.destroy(err => {

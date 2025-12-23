@@ -69,41 +69,53 @@ async handleMoMoNotify(req, res) {
   try {
     const { orderId, resultCode, amount, message } = req.body;
 
+    // 🟢 Trường hợp thanh toán thành công
     if (resultCode === 0) {
       // 🔍 Tìm booking tương ứng với orderId
-      const booking = await Booking.findOne({ momoOrderId: orderId });
+      const booking = await Booking.findOne({ momoOrderId: orderId }).populate("roomId userId");
 
       if (booking) {
-        // ✅ Cập nhật trạng thái booking
+        // ✅ Cập nhật trạng thái đơn đặt phòng
         booking.status = "paid";
         booking.isPaid = true;
+        booking.paidAt = new Date();
         await booking.save();
 
-        // ✅ Cập nhật trạng thái phòng (phòng này đã được đặt)
-        await Room.findByIdAndUpdate(booking.roomId, { isBooked: true });
+        // ✅ Đánh dấu phòng này đã có khách
+        if (booking.roomId) {
+          booking.roomId.isBooked = true;
+          await booking.roomId.save();
+        } else {
+          await Room.findByIdAndUpdate(booking.roomId, { isBooked: true });
+        }
 
-        // ✅ Tạo bản ghi thanh toán
+        // ✅ Lưu bản ghi thanh toán
         const payment = new Payment({
           bookingId: booking._id,
+          userId: booking.userId?._id,
           amount: parseInt(amount),
           method: "momo",
           status: "paid",
-          paidAt: new Date(), // 🎯 Thời điểm thanh toán thực tế
+          paidAt: new Date(),
         });
         await payment.save();
 
         console.log("✅ Thanh toán thành công:", booking._id);
+        console.log("💰 Số tiền:", amount);
         console.log("🕒 Thời điểm thanh toán:", payment.paidAt);
-        console.log("🏠 Phòng đã đánh dấu là đã có khách:", booking.roomId);
+        console.log("🏠 Phòng đã đánh dấu là đã có khách:", booking.roomId?._id);
+        console.log("👤 Người dùng:", booking.userId?.email || "Không xác định");
       } else {
         console.warn("⚠️ Không tìm thấy booking tương ứng với orderId:", orderId);
       }
+
     } else {
       console.log("❌ Thanh toán thất bại:", message);
     }
 
     // ✅ MoMo yêu cầu phản hồi HTTP 200 để xác nhận callback đã được nhận
     res.status(200).json({ message: "acknowledged" });
+
   } catch (error) {
     console.error("💥 Lỗi xử lý callback MoMo:", error);
     res.status(500).json({ message: "Lỗi xử lý callback" });
@@ -112,11 +124,17 @@ async handleMoMoNotify(req, res) {
 
 // 🧭 Trang chuyển hướng sau thanh toán
 async returnFromMoMo(req, res) {
-  const { resultCode } = req.query;
-  if (resultCode === "0") {
-    res.render("payment_success", { message: "Thanh toán thành công!" });
-  } else {
-    res.render("payment_fail", { message: "Thanh toán thất bại, vui lòng thử lại." });
+  try {
+    const { resultCode } = req.query;
+
+    if (resultCode === "0") {
+      res.render("payment_success", { message: "Thanh toán thành công!" });
+    } else {
+      res.render("payment_fail", { message: "Thanh toán thất bại, vui lòng thử lại." });
+    }
+  } catch (error) {
+    console.error("💥 Lỗi khi xử lý returnFromMoMo:", error);
+    res.render("payment_fail", { message: "Có lỗi xảy ra khi xử lý phản hồi." });
   }
 }
 }

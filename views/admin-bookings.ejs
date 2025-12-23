@@ -35,20 +35,28 @@
             <td>
               <% 
                 let badgeClass = 'bg-secondary';
-                if (b.status === 'paid') badgeClass = 'bg-success';
-                else if (b.status === 'confirmed' || b.status === 'checked_in') badgeClass = 'bg-primary';
-                else if (b.status === 'cancelled') badgeClass = 'bg-danger';
+                let statusText = '';
+
+                switch (b.status) {
+                  case 'paid': badgeClass = 'bg-success'; statusText = 'Đã thanh toán'; break;
+                  case 'checked_in': badgeClass = 'bg-primary'; statusText = 'Đang thuê'; break;
+                  case 'checked_out': badgeClass = 'bg-info'; statusText = 'Đã trả phòng'; break;
+                  case 'cancelled': badgeClass = 'bg-danger'; statusText = 'Đã hủy'; break;
+                  default: badgeClass = 'bg-warning text-dark'; statusText = 'Chờ xác nhận'; break;
+                }
               %>
-              <span class="badge <%= badgeClass %>"><%= b.status %></span>
+              <span class="badge <%= badgeClass %>"><%= statusText %></span>
             </td>
+
             <td class="text-end">
               <div class="d-flex gap-2 justify-content-end align-items-center">
                 <form action="/admin/bookings/<%= b._id %>/status" method="post" class="d-flex gap-2 align-items-center">
                   <select name="status" class="form-select form-select-sm" style="width:160px">
-                    <option <%= b.status==='pending'?'selected':'' %> value="pending">Chờ xác nhận</option>
-                    <option <%= b.status==='checked_in'?'selected':'' %> value="checked_in">Đang thuê</option>
-                    <option <%= b.status==='checked_out'?'selected':'' %> value="checked_out">Đã trả phòng</option>
-                    <option <%= b.status==='cancelled'?'selected':'' %> value="cancelled">Đã hủy</option>
+                    <option <%= b.status==='Chờ xác nhận'?'selected':'' %> value="pending">Chờ xác nhận</option>
+                    <option <%= b.status==='Đã thanh toán'?'selected':'' %> value="paid">Đã thanh toán</option>
+                    <option <%= b.status==='Check-in'?'selected':'' %> value="checked_in">Đang thuê</option>
+                    <option <%= b.status==='Check-out'?'selected':'' %> value="checked_out">Đã trả phòng</option>
+                    <option <%= b.status==='Đã hủy'?'selected':'' %> value="cancelled">Đã hủy</option>
                   </select>
                   <button class="btn btn-sm btn-primary">Cập nhật</button>
                 </form>

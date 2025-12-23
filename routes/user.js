@@ -379,6 +379,8 @@ router.get('/booking-confirm', async (req, res) => {
   }
 });
 
+// ==================== GỬI EMAIL XÁC NHẬN ĐẶT PHÒNG ====================
+router.post("/send-booking-email", requireAuth, userController.sendBookingEmail);
 
 
 module.exports = router;
