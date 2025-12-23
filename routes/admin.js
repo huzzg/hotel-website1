@@ -245,11 +245,17 @@ router.post('/rooms/:id', upload.single('image'), async (req, res, next) => {
 });
 
 
+// 🏠 Xóa phòng
 router.post('/rooms/:id/delete', async (req, res, next) => {
   try {
     await Room.findByIdAndDelete(req.params.id);
+    if (req.flash) req.flash('success', 'Đã xóa phòng thành công');
     res.redirect('/admin/rooms');
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('❌ Lỗi khi xóa phòng:', e);
+    if (req.flash) req.flash('error', 'Không thể xóa phòng');
+    next(e);
+  }
 });
 
 // BOOKINGS
@@ -312,14 +318,15 @@ router.post('/bookings/:id/status', async (req, res, next) => {
 });
 
 
-// Delete booking (new)
+// 📦 Xóa đơn đặt phòng
 router.post('/bookings/:id/delete', async (req, res, next) => {
   try {
-    // Optionally: you could archive instead of delete. Here we remove the booking doc.
     await Booking.findByIdAndDelete(req.params.id);
-    // Also consider deleting related payment record(s) if they exist and are test data.
+    if (req.flash) req.flash('success', 'Đã xóa đơn đặt phòng');
     res.redirect('/admin/bookings');
   } catch (e) {
+    console.error('❌ Lỗi khi xóa đơn đặt phòng:', e);
+    if (req.flash) req.flash('error', 'Không thể xóa đơn đặt phòng');
     next(e);
   }
 });
@@ -346,13 +353,15 @@ router.post('/users/:id/toggle-block', async (req, res, next) => {
   }
 });
 
-// ✅ Xóa tài khoản
+// 👤 Xóa người dùng
 router.post('/users/:id/delete', async (req, res, next) => {
   try {
     await User.findByIdAndDelete(req.params.id);
+    if (req.flash) req.flash('success', 'Đã xóa người dùng thành công');
     res.redirect('/admin/users');
   } catch (e) {
-    console.error('delete user error', e);
+    console.error('❌ Lỗi khi xóa người dùng:', e);
+    if (req.flash) req.flash('error', 'Không thể xóa người dùng');
     next(e);
   }
 });
@@ -507,15 +516,19 @@ router.post('/discounts/:id', async (req, res, next) => {
   }
 });
 
-router.post('/discounts/delete/:id', async (req, res) => {
+// 🗑️ Xóa mã giảm giá
+router.post('/discounts/:id/delete', async (req, res) => {
   try {
     await Discount.findByIdAndDelete(req.params.id);
+    if (req.flash) req.flash('success', 'Xóa mã giảm giá thành công');
     res.redirect('/admin/discounts');
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Lỗi khi xóa mã giảm giá');
+    console.error('❌ Lỗi khi xóa mã giảm giá:', error);
+    if (req.flash) req.flash('error', 'Lỗi khi xóa mã giảm giá');
+    res.status(500).send('Lỗi server khi xóa mã giảm giá');
   }
 });
+
 
 // GET trang chỉnh sửa
 router.get('/discounts/edit/:id', async (req, res) => {

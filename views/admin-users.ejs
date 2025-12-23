@@ -38,9 +38,8 @@
         <%= u.isBlocked ? 'Mở khóa' : 'Chặn' %>
       </button>
     </form>
-    <form action="/admin/users/<%= u._id %>/delete" method="post" style="display:inline;"
-          onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
-      <button class="btn btn-sm btn-danger">Xóa</button>
+    <form method="post" action="/admin/users/<%= u._id %>/delete" class="d-inline delete-user-form">
+      <button type="button" class="btn btn-sm btn-danger btn-delete-user" data-name="<%= u.username %>">Xóa</button>
     </form>
   <% } %>
 </td>
@@ -53,3 +52,36 @@
 </div>
 
 <%- include('partials/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const form = e.target.closest('form');
+      const name = e.target.dataset.name || 'người dùng này';
+
+      Swal.fire({
+        title: 'Xóa tài khoản?',
+        text: `Bạn có chắc muốn xóa tài khoản "${name}"? Hành động này không thể hoàn tác.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa ngay',
+        cancelButtonText: 'Hủy',
+        background: '#fefefe',
+        color: '#333',
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+});
+</script>
+
+

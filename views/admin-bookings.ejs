@@ -62,8 +62,13 @@
                 </form>
 
                 <!-- Delete form -->
-                <form action="/admin/bookings/<%= b._id %>/delete" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa đơn này? Hành động không thể hoàn tác.');">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                <form method="post" action="/admin/bookings/<%= b._id %>/delete" class="d-inline delete-booking-form">
+                  <button type="button" 
+        class="btn btn-sm btn-outline-danger btn-delete-booking" 
+        data-room="<%= b.roomId ? b.roomId.roomNumber : 'Không xác định' %>">
+  Xóa
+</button>
+
                 </form>
               </div>
             </td>
@@ -76,3 +81,38 @@
 </div>
 
 <%- include('partials/footer') %>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Xử lý nút xóa booking bằng SweetAlert
+  document.querySelectorAll('.btn-delete-booking').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const form = e.target.closest('form');
+      const roomNum = e.target.dataset.room || 'N/A';
+
+      Swal.fire({
+        title: 'Xác nhận xóa đơn đặt phòng?',
+        text: `Bạn có chắc muốn xóa đơn phòng ${roomNum}? Hành động này không thể hoàn tác.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa ngay',
+        cancelButtonText: 'Hủy',
+        background: '#fefefe',
+        color: '#333',
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+});
+</script>
+
+

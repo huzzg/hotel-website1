@@ -48,8 +48,8 @@
               </td> 
               <td>
                 <a href="/admin/discounts/edit/<%= d._id %>" class="btn btn-warning btn-sm">Sửa</a>
-                <form action="/admin/discounts/delete/<%= d._id %>" method="POST" style="display:inline;">
-                  <button class="btn btn-sm btn-outline-danger btnDelete" data-id="<%= d._id %>">Xóa</button>
+                <form method="post" action="/admin/discounts/<%= d._id %>/delete" class="d-inline delete-discount-form">
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-delete-discount" data-code="<%= d.code %>">Xóa</button>
                 </form>
               </td>
             </tr>
@@ -110,6 +110,9 @@
 </div>
 
 <%- include('partials/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 <script>
 (function(){
@@ -227,3 +230,33 @@
 });
 })();
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.btn-delete-discount').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const form = e.target.closest('form');
+      const code = e.target.dataset.code || 'Mã không xác định';
+
+      Swal.fire({
+        title: 'Xóa mã giảm giá?',
+        text: `Bạn có chắc muốn xóa mã "${code}"? Hành động này không thể hoàn tác.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa ngay',
+        cancelButtonText: 'Hủy',
+        background: '#fefefe',
+        color: '#333',
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+});
+</script>
+
