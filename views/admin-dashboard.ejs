@@ -64,12 +64,12 @@
   style="width:170px;"
   type="<%= range === 'year' ? 'number' : (range === 'month' ? 'month' : 'date') %>"
   min="2000" max="2100"
-  value="<%= range === 'year'
-    ? selectedDate.getFullYear()
-    : (range === 'month'
-      ? selectedDate.toISOString().slice(0,7)
-      : selectedDate.toISOString().split('T')[0]) %>"
-  placeholder="Chọn"
+  value="<%= selectedDate ? (() => {
+  const local = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
+  if (range === 'year') return local.getFullYear();
+  if (range === 'month') return local.toISOString().slice(0,7);
+  return local.toISOString().split('T')[0];
+})() : '' %>"
 />
 
 <button class="btn btn-primary btn-sm" type="submit">Xem</button>
@@ -83,8 +83,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const chartLabels = <%- JSON.stringify(statsRows.map(r => r.key)) %>;
-  const chartValues = <%- JSON.stringify(statsRows.map(r => r.total)) %>;
+  const chartLabels = <%- JSON.stringify(statsRows.map((r) => r.key)) %>;
+  const chartValues = <%- JSON.stringify(statsRows.map((r) => r.total)) %>;
 
   if (chartLabels.length > 0) {
     const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -110,41 +110,30 @@
 
 <hr>
 <h5 class="mt-4">Chi tiết doanh thu</h5>
-<div class="table-responsive mt-3">
-  <table class="table table-bordered text-center align-middle">
-    <thead class="table-light">
-      <tr>
-        <th>#</th>
-        <th>
-          <% if (selectedRange === 'day') { %>
-            Ngày
-          <% } else if (selectedRange === 'month') { %>
-            Tháng
-          <% } else { %>
-            Năm
-          <% } %>
-        </th>
-        <th>Đơn hàng</th>
-        <th>Doanh thu (đ)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (!statsRows || statsRows.length === 0) { %>
+<table class="table table-bordered text-center mt-3">
+  <thead class="table-light">
+    <tr>
+      <th>Khoảng thời gian</th>
+      <th>Số đơn</th>
+      <th>Doanh thu (₫)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (statsRows && statsRows.length > 0) { %>
+      <% statsRows.forEach(r => { %>
         <tr>
-          <td colspan="4" class="text-muted">Không có dữ liệu</td>
+          <td><%= r.key %></td>
+          <td><%= r.count %></td>
+          <td><%= r.total.toLocaleString('vi-VN') %></td>
         </tr>
-      <% } else { %>
-        <% statsRows.forEach((row, index) => { %>
-          <tr>
-            <td><%= index + 1 %></td>
-            <td><%= row.key %></td>
-            <td><%= row.count %></td>
-            <td><%= row.total.toLocaleString('vi-VN') %></td>
-          </tr>
-        <% }) %>
-      <% } %>
-    </tbody>
-  </table>
+      <% }) %>
+    <% } else { %>
+      <tr>
+        <td colspan="3" class="text-muted">Không có dữ liệu trong khoảng thời gian này.</td>
+      </tr>
+    <% } %>
+  </tbody>
+</table>
 </div>
 
 <%- include('partials/footer') %>
@@ -183,41 +172,4 @@
   })();
 </script>
 
-<script>
-  // === Biểu đồ đường xu hướng doanh thu ===
-  const lineCtx = document.getElementById('revenueLineChart').getContext('2d');
 
-  const lineChart = new Chart(lineCtx, {
-    type: 'line',
-    data: {
-      labels: chartData.labels,
-      datasets: [{
-        label: 'Doanh thu (₫)',
-        data: chartData.data,
-        borderColor: 'rgba(54, 162, 235, 1)',
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        tension: 0.3,
-        fill: true,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Xu hướng doanh thu theo thời gian'
-        },
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
-</script>

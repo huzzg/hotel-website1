@@ -1,4 +1,5 @@
 // routes/payment.js
+require("dotenv").config();
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
@@ -131,41 +132,51 @@ router.post("/momo/create", requireAuth, async (req, res) => {
 
     // Nếu người dùng có nhập mã giảm giá
     if (discountCode && discountCode.trim() !== "") {
-      const discount = await Discount.findOne({ code: discountCode.trim().toUpperCase(), active: true });
+      const discount = await Discount.findOne({
+        code: discountCode.trim().toUpperCase(),
+        active: true,
+      });
       if (discount) {
         const now = new Date();
         const start = new Date(discount.startDate);
         const end = new Date(discount.endDate);
         if (now >= start && now <= end) {
           const percent = Number(discount.percent) || 0;
-          totalAmount = Math.max(totalAmount - (totalAmount * percent) / 100, 0);
+          totalAmount = Math.max(
+            totalAmount - (totalAmount * percent) / 100,
+            0
+          );
           console.log(`Áp mã ${discount.code}: -${percent}% => còn ${totalAmount}`);
         }
       }
     }
 
     // --- Thông tin MoMo test ---
-    const partnerCode = "MOMO";
-    const accessKey = "F8BBA842ECF85";
-    const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
+    const partnerCode = process.env.MOMO_PARTNER_CODE;
+    const accessKey = process.env.MOMO_ACCESS_KEY;
+    const secretKey = process.env.MOMO_SECRET_KEY;
+    const orderId = `${booking._id.toString()}_${Date.now()}`;
     const requestId = partnerCode + Date.now();
-    const orderId = requestId;
     const orderInfo = `Thanh toán đặt phòng ${booking.roomId.roomNumber}`;
-    const redirectUrl = "http://localhost:3000/payment/momo/return";
-    const ipnUrl = "http://localhost:3000/payment/momo/notify";
+    const redirectUrl = process.env.MOMO_RETURN_URL;
+    const ipnUrl = process.env.MOMO_NOTIFY_URL;
     const amount = totalAmount.toString();
     const requestType = "captureWallet";
     const extraData = "";
 
+    // === Tạo chữ ký ===
     const rawSignature =
       `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}` +
       `&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}` +
       `&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}` +
       `&requestId=${requestId}&requestType=${requestType}`;
-    const signature = crypto.createHmac("sha256", secretKey)
+
+    const signature = crypto
+      .createHmac("sha256", secretKey)
       .update(rawSignature)
       .digest("hex");
 
+    // === Dữ liệu gửi đi ===
     const requestBody = {
       partnerCode,
       accessKey,
@@ -178,11 +189,21 @@ router.post("/momo/create", requireAuth, async (req, res) => {
       extraData,
       requestType,
       signature,
-      lang: "vi"
+      lang: "vi",
     };
 
-    const response = await axios.post("https://test-payment.momo.vn/v2/gateway/api/create", requestBody);
+    console.log("📤 Gửi yêu cầu MoMo:", requestBody);
 
+    // === Gửi request tới MoMo ===
+    const response = await axios.post(
+      process.env.MOMO_API,
+      requestBody,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    console.log("📥 Phản hồi MoMo:", response.data);
+
+    // === Kiểm tra phản hồi ===
     if (response.data && response.data.payUrl) {
       booking.momoOrderId = orderId;
       booking.discountCode = discountCode || null;
@@ -190,11 +211,14 @@ router.post("/momo/create", requireAuth, async (req, res) => {
       await booking.save();
       return res.json({ payUrl: response.data.payUrl });
     } else {
+      console.error("❌ Không nhận được payUrl:", response.data);
       return res.status(500).send("Không nhận được payUrl từ MoMo");
     }
-  } catch (err) {
-    console.error("Lỗi tạo thanh toán MoMo:", err);
-    res.status(500).send("Lỗi khi tạo thanh toán MoMo");
+
+  } catch (error) {
+    console.error("❌ Lỗi khi tạo thanh toán MoMo:", error.message);
+    console.error(error.stack);
+    return res.status(500).send("Lỗi khi gọi API MoMo.");
   }
 });
 
@@ -262,21 +286,20 @@ router.get('/user', requireAuth, async (req, res) => {
  */
 router.get("/momo/return", async (req, res) => {
   try {
-    const { resultCode, orderId, message } = req.query;
-    console.log("📩 MoMo return:", req.query);
+    const data = req.query;
+    console.log("📩 MoMo return:", data);
 
-    // Tìm booking theo orderId
-    const booking = await Booking.findOne({ momoOrderId: orderId });
+    const booking = await Booking.findOne({ momoOrderId: data.orderId });
     if (!booking) {
-      console.warn("⚠️ Không tìm thấy booking tương ứng:", orderId);
-      return res.redirect(`/payment/user?status=error`);
+      return res.redirect(`/user/booking-confirm?status=error`);
     }
 
-    // Thành công
-    if (resultCode === "0") {
-      booking.status = "paid";
-      await booking.save();
+    const isSuccess = data.resultCode === "0";
 
+    booking.status = isSuccess ? "paid" : "cancelled";
+    await booking.save();
+
+    if (isSuccess) {
       await Payment.create({
         bookingId: booking._id,
         amount: booking.amountAfterDiscount || booking.totalPrice,
@@ -284,19 +307,15 @@ router.get("/momo/return", async (req, res) => {
         status: "paid",
         paidAt: new Date(),
       });
-
-      console.log("✅ Thanh toán MoMo thành công cho booking:", booking._id);
-      return res.redirect(`/payment/user?bookingId=${booking._id}&status=success`);
+      res.redirect(`/user/booking-confirm?bookingId=${booking._id}&status=success`);
+    } else {
+      res.redirect(`/user/booking-confirm?bookingId=${booking._id}&status=failed`);
     }
-
-    // Thất bại
-    console.warn("❌ Thanh toán thất bại:", message);
-    return res.redirect(`/payment/user?bookingId=${booking._id}&status=failed`);
   } catch (err) {
-    console.error("❌ Lỗi trong /payment/momo/return:", err);
-    res.redirect(`/payment/user?status=error`);
+    console.error("❌ Lỗi callback MoMo:", err);
+    res.redirect(`/user/booking-confirm?status=error`);
   }
 });
 
-
+console.log("✅ MoMo routes loaded (sandbox mode)");
 module.exports = router;

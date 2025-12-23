@@ -79,6 +79,7 @@ const authRoutes = require('./routes/auth');
 const searchRoutes = require('./routes/search');
 const paymentRoutes = require('./routes/payment');
 
+
 app.use('/review', reviewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/user', userRoutes);

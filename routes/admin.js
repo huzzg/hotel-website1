@@ -15,7 +15,6 @@ const Discount = require('../models/Discount');
 // Bảo vệ tất cả route admin
 router.use(requireAdmin);
 
-router.get('/dashboard', requireAdmin, userController.getAdminDashboard);
 
 // multer & upload dir (giữ nguyên)
 const multer = require('multer');
@@ -46,62 +45,46 @@ function parsePriceInput(raw) {
   return Number.isFinite(n) ? n : null;
 }
 
-// DASHBOARD
+// === DASHBOARD ===
 router.get('/dashboard', async (req, res, next) => {
   try {
-    const range = (req.query.range || 'month').toLowerCase(); // day|month|year
+    console.log("📍 Đã vào route /admin/dashboard, session:", req.session.user);
+
+    const range = (req.query.range || 'month').toLowerCase();
     const date = req.query.date || null;
 
-    // users count, rooms count
     const [usersCount, roomsCount] = await Promise.all([
       User.countDocuments({}),
       Room.countDocuments({})
     ]);
 
-    // bookingsCount: KHÔNG tính các đơn đã hủy
     const bookingsCount = await Booking.countDocuments({ status: { $ne: 'cancelled' } });
 
-    // Payment match: only real payments with status 'paid'
-    const paymentMatch = { status: 'paid' };
+    // === Bộ lọc thời gian ===
+    const paymentMatch = {};
 
-    // Build date filters in UTC (so filters match stored ISO times)
     if (date) {
+      let start, end;
       if (range === 'day') {
-        // expected date format: YYYY-MM-DD
-        const parts = date.split('-');
-        const y = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const d = parseInt(parts[2], 10);
-        // use UTC boundaries so no timezone shift problems
-        const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
-        const end = new Date(Date.UTC(y, m, d, 23, 59, 59, 999));
-        paymentMatch.paidAt = { $gte: start, $lte: end };
+        const d = new Date(date);
+        start = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0));
+        end = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59));
       } else if (range === 'month') {
-        // expected date format: YYYY-MM
-        const parts = date.split('-');
-        if (parts.length === 2) {
-          const year = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1;
-          const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
-          // month+1 day 0 -> last day of month
-          const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
-          paymentMatch.paidAt = { $gte: start, $lte: end };
-        }
+        const [y, m] = date.split('-').map(Number);
+        start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+        end = new Date(Date.UTC(y, m, 0, 23, 59, 59));
       } else if (range === 'year') {
-        const year = parseInt(date, 10);
-        if (!Number.isNaN(year)) {
-          const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-          const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
-          paymentMatch.paidAt = { $gte: start, $lte: end };
-        }
+        const y = parseInt(date, 10);
+        start = new Date(Date.UTC(y, 0, 1, 0, 0, 0));
+        end = new Date(Date.UTC(y, 11, 31, 23, 59, 59));
       }
+      paymentMatch.paidAt = { $gte: start, $lte: end };
     }
 
-    // totalRevenue based on payments (status: 'paid')
-    // Additionally exclude payments whose booking is CANCELLED (so test cancelled orders are not counted)
+    console.log("📅 Điều kiện lọc:", paymentMatch);
+
+    // === Tổng doanh thu ===
     const totalAgg = await Payment.aggregate([
-      { $match: paymentMatch },
-      // join booking to check its status
       {
         $lookup: {
           from: 'bookings',
@@ -111,62 +94,91 @@ router.get('/dashboard', async (req, res, next) => {
         }
       },
       { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
-      { $match: { $or: [{ 'booking.status': { $exists: false } }, { 'booking.status': { $ne: 'cancelled' } }] } },
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$amount', 0] } }, count: { $sum: 1 } } }
-    ]).catch(() => []);
-
-    const totalRevenue = (totalAgg && totalAgg.length) ? totalAgg[0].total : 0;
-
-    // group format by range (use timezone +07:00 for readable grouping in VN)
-    let groupFormat = { $dateToString: { format: "%Y-%m", date: "$paidAt", timezone: "+07:00" } };
-    if (range === 'day') groupFormat = { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone: "+07:00" } };
-    else if (range === 'year') groupFormat = { $dateToString: { format: "%Y", date: "$paidAt", timezone: "+07:00" } };
-
-    const payPipeline = [];
-    if (Object.keys(paymentMatch).length) payPipeline.push({ $match: paymentMatch });
-
-    // ensure we exclude cancelled bookings in the per-bucket stats as well
-    payPipeline.push({
-      $lookup: {
-        from: 'bookings',
-        localField: 'bookingId',
-        foreignField: '_id',
-        as: 'booking'
+      {
+        $match: {
+          $or: [
+            { status: 'paid' },
+            { 'booking.status': { $in: ['checked_in', 'checked_out'] } }
+          ],
+          ...(paymentMatch.paidAt ? { paidAt: paymentMatch.paidAt } : {})
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
       }
-    });
-    payPipeline.push({ $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } });
-    payPipeline.push({ $match: { $or: [{ 'booking.status': { $exists: false } }, { 'booking.status': { $ne: 'cancelled' } }] } });
+    ]);
 
-    payPipeline.push({
-      $group: {
-        _id: groupFormat,
-        total: { $sum: { $ifNull: ["$amount", 0] } },
-        count: { $sum: 1 }
-      }
-    });
-    payPipeline.push({ $sort: { "_id": -1 } });
+    const totalRevenue = totalAgg?.[0]?.total || 0;
+    const totalOrders = totalAgg?.[0]?.count || 0;
 
-    const payStats = await Payment.aggregate(payPipeline).catch(() => []);
+    // === Gom nhóm thống kê ===
+    let groupFormat;
+    if (range === 'day')
+      groupFormat = { $dateToString: { format: '%Y-%m-%d', date: '$paidAt', timezone: '+07:00' } };
+    else if (range === 'year')
+      groupFormat = { $dateToString: { format: '%Y', date: '$paidAt', timezone: '+07:00' } };
+    else
+      groupFormat = { $dateToString: { format: '%Y-%m', date: '$paidAt', timezone: '+07:00' } };
 
-    const rows = payStats.map(item => {
-      const key = item._id || '/';
-      return { key, total: item.total || 0, count: item.count || 0 };
-    });
+    const payStats = await Payment.aggregate([
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: 'bookingId',
+          foreignField: '_id',
+          as: 'booking'
+        }
+      },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { status: 'paid' },
+            { 'booking.status': { $in: ['checked_in', 'checked_out'] } }
+          ],
+          ...(paymentMatch.paidAt ? { paidAt: paymentMatch.paidAt } : {})
+        }
+      },
+      {
+        $group: {
+          _id: groupFormat,
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
 
-    return res.render('admin-dashboard', {
+    const statsRows = payStats.length
+      ? payStats.map(r => ({ key: r._id, total: r.total, count: r.count }))
+      : [{ key: 'Không có dữ liệu', total: 0, count: 0 }];
+
+    console.log("📊 Stats:", statsRows);
+
+    res.render('admin-dashboard', {
       title: 'Admin • Dashboard',
       usersCount,
       roomsCount,
       bookingsCount,
       totalRevenue,
-      statsRows: rows,
+      totalOrders,
+      statsRows,
+       range,
       selectedRange: range,
-      selectedDate: date || ''
+      selectedDate: date ? new Date(date) : null
     });
+
   } catch (err) {
+    console.error('❌ Lỗi Dashboard:', err);
     next(err);
   }
 });
+
+
 
 // ROOMS (giữ nguyên)
 router.get('/rooms', async (req, res, next) => {
@@ -258,13 +270,36 @@ router.get('/bookings', async (req, res, next) => {
 });
 
 // Update booking status
+// Update booking status
 router.post('/bookings/:id/status', async (req, res, next) => {
   try {
-    const { status } = req.body; // pending | checked_in | checked_out | cancelled
-    await Booking.findByIdAndUpdate(req.params.id, { status });
+    const { status } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.redirect('/admin/bookings');
+
+    booking.status = status;
+
+    // ✅ Nếu trạng thái là "checked_in", "checked_out" hoặc "paid" thì set isPaid = true
+    if (['checked_in', 'checked_out', 'paid'].includes(status)) {
+      booking.isPaid = true;
+    }
+
+    await booking.save();
+
+    // ✅ Cập nhật trạng thái vào Payment tương ứng
+    await Payment.updateMany(
+      { bookingId: booking._id },
+      { $set: { bookingStatus: status } }
+    );
+
     res.redirect('/admin/bookings');
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('❌ Lỗi cập nhật trạng thái booking:', e);
+    next(e);
+  }
 });
+
 
 // Delete booking (new)
 router.post('/bookings/:id/delete', async (req, res, next) => {

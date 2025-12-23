@@ -1,4 +1,12 @@
 <%- include('partials/header') %>
+<% if (status === 'success' || booking.status === 'paid') { %>
+  <div class="alert alert-success text-center">🎉 Thanh toán MoMo thành công!</div>
+<% } else if (status === 'failed') { %>
+  <div class="alert alert-danger text-center">❌ Thanh toán thất bại. Vui lòng thử lại.</div>
+<% } else if (status === 'error') { %>
+  <div class="alert alert-warning text-center">⚠️ Có lỗi xảy ra khi xử lý thanh toán.</div>
+<% } %>
+
 <div class="container mt-5 pt-5">
   <div class="row justify-content-center">
     <div class="col-md-9">

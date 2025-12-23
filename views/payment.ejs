@@ -78,41 +78,52 @@
 
     // Xử lý nút Xác nhận
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const method = methodInput.value;
-      const bookingId = '<%= booking._id %>';
+  e.preventDefault(); // Ngăn form reload trang
+  const method = methodInput.value;
+  const bookingId = '<%= booking._id %>';
+  const confirmButton = form.querySelector('button[type="submit"]');
 
-      if (!method) {
-        payMessage.innerHTML = '<span class="text-danger">⚠️ Vui lòng chọn phương thức thanh toán trước khi xác nhận!</span>';
-        return;
-      }
+  if (confirmButton.disabled) return; // ⛔ Tránh double-click
+  confirmButton.disabled = true;
+  payMessage.innerHTML = '';
 
-      // ===== Nếu chọn MOMO =====
-      if (method === 'momo') {
-        payMessage.innerHTML = '<span class="text-primary">⏳ Đang khởi tạo QR MoMo test...</span>';
-        try {
-          const response = await fetch('/payment/momo/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId })
-          });
-          const data = await response.json();
-          if (data.payUrl) {
-            window.location.href = data.payUrl;
-          } else {
-            payMessage.innerHTML = '<span class="text-danger">Không thể khởi tạo QR MoMo test.</span>';
-          }
-        } catch (err) {
-          console.error(err);
-          payMessage.innerHTML = '<span class="text-danger">Lỗi khi gọi API MoMo.</span>';
-        }
-      }
+  if (!method) {
+    payMessage.innerHTML = '<span class="text-danger">⚠️ Vui lòng chọn phương thức thanh toán trước khi xác nhận!</span>';
+    confirmButton.disabled = false;
+    return;
+  }
 
-      // ===== Nếu chọn VNPAY =====
-      else if (method === 'vnpay') {
-        payMessage.innerHTML = '<span class="text-warning">⚠️ VNPay đang được phát triển, vui lòng chọn MoMo để test.</span>';
+  // ===== Nếu chọn MOMO =====
+  if (method === 'momo') {
+    payMessage.innerHTML = '<span class="text-primary">⏳ Đang chuyển sang trang thanh toán MoMo...</span>';
+    try {
+      const response = await fetch('/payment/momo/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId })
+      });
+
+      // ⚠️ Đoạn này đổi từ redirect server → trả JSON payUrl
+      const data = await response.json();
+      if (data.payUrl) {
+        window.location.href = data.payUrl; // 👉 Mở trang QR MoMo
+      } else {
+        payMessage.innerHTML = '<span class="text-danger">Không thể mở trang thanh toán MoMo.</span>';
       }
-    });
+    } catch (err) {
+      console.error(err);
+      payMessage.innerHTML = '<span class="text-danger">Lỗi khi khởi tạo thanh toán MoMo.</span>';
+    } finally {
+      confirmButton.disabled = false;
+    }
+  }
+
+  // ===== Nếu chọn VNPAY =====
+  else if (method === 'vnpay') {
+    payMessage.innerHTML = '<span class="text-warning">⚠️ VNPay đang được phát triển, vui lòng chọn MoMo để test.</span>';
+    confirmButton.disabled = false;
+  }
+});
   });
 </script>
 

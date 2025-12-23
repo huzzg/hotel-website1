@@ -260,52 +260,63 @@ router.post('/book', requireAuth, async (req, res) => {
   try {
     const { roomId, checkIn, checkOut, guests, discountCode } = req.body;
 
-    if (!req.user || !req.user.id) {
-      console.warn("⚠️ Người dùng chưa đăng nhập - chặn đặt phòng.");
-      return res.status(401).render('error', {
-        message: 'Bạn cần đăng nhập để đặt phòng!',
-        redirectUrl: '/auth/login'
-      });
-    }
-
-    const currentUser = req.user;
+    // ✅ Lấy thông tin phòng
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).send('Không tìm thấy phòng.');
 
-    // 👉 Tính giá dựa trên số đêm
-    const inDate = new Date(checkIn);
-    const outDate = new Date(checkOut);
-    const nights = Math.max(1, (outDate - inDate) / (1000 * 60 * 60 * 24));
-    let totalPrice = room.price * nights;
+    // ✅ Tính số đêm ở
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const nights = Math.max(1, Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
 
-    // 👉 Áp mã giảm giá nếu có
+    // ✅ Tính giá phòng
+    const roomPrice = Number(room.price) || 0;
     let discountValue = 0;
-    if (discountCode) {
-      const discount = await Discount.findOne({ code: discountCode });
-      if (discount && discount.active) {
-        discountValue = (totalPrice * discount.value) / 100;
+
+    // ✅ Kiểm tra và áp dụng mã giảm giá (nếu có)
+    if (discountCode && discountCode.trim() !== "") {
+      const discount = await Discount.findOne({ code: discountCode.trim(), active: true });
+      if (discount) {
+        const now = new Date();
+        const start = new Date(discount.startDate);
+        const end = new Date(discount.endDate);
+        if (now >= start && now <= end) {
+          if (discount.percent) {
+            discountValue = (roomPrice * nights * discount.percent) / 100;
+          } else {
+            discountValue = Number(discount.value) || 0;
+          }
+        }
       }
     }
 
-    const finalPrice = totalPrice - discountValue;
+    // ✅ Tính tổng giá cuối cùng
+    const totalPrice = Math.max(roomPrice * nights - discountValue, 0);
 
+    if (isNaN(totalPrice)) {
+      console.error("❌ totalPrice bị NaN:", { roomPrice, nights, discountValue });
+      return res.status(400).send("Lỗi tính giá tổng. Vui lòng thử lại.");
+    }
+
+    // ✅ Tạo booking
     const booking = await Booking.create({
-      userId: currentUser._id || currentUser.id,
+      userId: req.user._id,
       roomId,
       checkIn,
       checkOut,
       guests,
-      totalPrice: finalPrice,
-      status: 'pending',
+      totalPrice,
+      discountCode: discountCode || null,
+      status: 'pending'
     });
 
-    console.log("✅ Đặt phòng thành công:", booking._id);
     res.redirect('/user/history');
   } catch (err) {
     console.error('❌ Lỗi khi đặt phòng:', err);
     res.status(500).send('Lỗi xử lý đặt phòng.');
   }
 });
+
 
 
 // ✅ Thêm route Giới thiệu (đặt TRƯỚC module.exports)
@@ -330,6 +341,31 @@ router.get("/review/:roomId", reviewController.getRoomReviews);
 
 // Gửi đánh giá phòng
 router.post("/review/:roomId", reviewController.addReview);
+
+// =============== XÁC NHẬN ĐẶT PHÒNG SAU KHI THANH TOÁN MOMO ===============
+router.get('/booking-confirm', async (req, res) => {
+  try {
+    const { bookingId, status } = req.query;
+    if (!bookingId) {
+      return res.status(400).render('error', { message: 'Thiếu mã đơn đặt phòng!' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('roomId');
+    if (!booking) {
+      return res.status(404).render('error', { message: 'Không tìm thấy đơn đặt phòng.' });
+    }
+
+    res.render('booking-confirm', {
+      title: 'Xác nhận đặt phòng',
+      booking,
+      status: status || booking.status
+    });
+  } catch (err) {
+    console.error('❌ Lỗi hiển thị xác nhận đặt phòng:', err);
+    res.status(500).render('error', { message: 'Lỗi xử lý xác nhận đặt phòng.' });
+  }
+});
+
 
 
 module.exports = router;

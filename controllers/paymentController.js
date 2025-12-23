@@ -65,36 +65,44 @@ class PaymentController {
   }
 
   // 🔁 Nhận callback khi MoMo phản hồi (IPN)
-  async handleMoMoNotify(req, res) {
-    try {
-      const { orderId, resultCode, amount, message } = req.body;
+async handleMoMoNotify(req, res) {
+  try {
+    const { orderId, resultCode, amount, message } = req.body;
 
-      if (resultCode === 0) {
-        const booking = await Booking.findOne({ momoOrderId: orderId });
-        if (booking) {
-          booking.status = "paid";
-          await booking.save();
+    if (resultCode === 0) {
+      const booking = await Booking.findOne({ momoOrderId: orderId });
+      if (booking) {
+        // ✅ Cập nhật trạng thái booking
+        booking.status = "paid";
+        booking.isPaid = true;
+        await booking.save();
 
-          const payment = new Payment({
-            bookingId: booking._id,
-            amount: parseInt(amount),
-            method: "momo",
-            status: "paid",
-          });
-          await payment.save();
+        // ✅ Tạo bản ghi thanh toán, ghi thời điểm thanh toán thật
+        const payment = new Payment({
+          bookingId: booking._id,
+          amount: parseInt(amount),
+          method: "momo",
+          status: "paid",
+          paidAt: new Date(), // 🎯 Ghi lại thời điểm thanh toán chính xác
+        });
 
-          console.log("✅ Thanh toán thành công:", booking._id);
-        }
-      } else {
-        console.log("❌ Thanh toán thất bại:", message);
+        await payment.save();
+
+        console.log("✅ Thanh toán thành công:", booking._id);
+        console.log("🕒 paidAt:", payment.paidAt);
       }
-
-      res.status(200).json({ message: "acknowledged" });
-    } catch (error) {
-      console.error("Lỗi xử lý callback MoMo:", error);
-      res.status(500).json({ message: "Lỗi xử lý callback" });
+    } else {
+      console.log("❌ Thanh toán thất bại:", message);
     }
+
+    // MoMo yêu cầu phản hồi HTTP 200 để xác nhận callback đã được nhận
+    res.status(200).json({ message: "acknowledged" });
+  } catch (error) {
+    console.error("💥 Lỗi xử lý callback MoMo:", error);
+    res.status(500).json({ message: "Lỗi xử lý callback" });
   }
+}
+
 
   // 🧭 Trang chuyển hướng sau thanh toán
   async returnFromMoMo(req, res) {
