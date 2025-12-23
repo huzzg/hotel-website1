@@ -11,7 +11,10 @@ const RoomSchema = new mongoose.Schema(
     status: { type: String, default: 'available' },
     image: { type: String },
     description: { type: String, default: '' },
-    isActive: { type: Boolean, default: true },
+    isBooked: {
+    type: Boolean,
+    default: false,
+  },
   },
   { timestamps: true }
 );

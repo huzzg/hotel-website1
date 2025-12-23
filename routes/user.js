@@ -194,6 +194,19 @@ router.get("/room/:roomId", async (req, res) => {
   }
 });
 
+// 🏨 Hiển thị danh sách tất cả phòng (hoặc chỉ phòng trống nếu có query ?available=true)
+router.get("/rooms", async (req, res) => {
+  try {
+    const filter = req.query.available === "true" ? { isBooked: false } : {};
+    const rooms = await Room.find(filter).sort({ price: 1 });
+
+    res.render("rooms-list", { rooms });
+  } catch (err) {
+    console.error("❌ Lỗi tải danh sách phòng:", err);
+    res.status(500).send("Đã xảy ra lỗi khi tải danh sách phòng.");
+  }
+});
+
 // =============== THANH TOÁN ===============
 router.post('/payment', requireAuth, async (req, res) => {
   try {

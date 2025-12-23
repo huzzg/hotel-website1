@@ -70,32 +70,39 @@ async handleMoMoNotify(req, res) {
     const { orderId, resultCode, amount, message } = req.body;
 
     if (resultCode === 0) {
+      // 🔍 Tìm booking tương ứng với orderId
       const booking = await Booking.findOne({ momoOrderId: orderId });
+
       if (booking) {
         // ✅ Cập nhật trạng thái booking
         booking.status = "paid";
         booking.isPaid = true;
         await booking.save();
 
-        // ✅ Tạo bản ghi thanh toán, ghi thời điểm thanh toán thật
+        // ✅ Cập nhật trạng thái phòng (phòng này đã được đặt)
+        await Room.findByIdAndUpdate(booking.roomId, { isBooked: true });
+
+        // ✅ Tạo bản ghi thanh toán
         const payment = new Payment({
           bookingId: booking._id,
           amount: parseInt(amount),
           method: "momo",
           status: "paid",
-          paidAt: new Date(), // 🎯 Ghi lại thời điểm thanh toán chính xác
+          paidAt: new Date(), // 🎯 Thời điểm thanh toán thực tế
         });
-
         await payment.save();
 
         console.log("✅ Thanh toán thành công:", booking._id);
-        console.log("🕒 paidAt:", payment.paidAt);
+        console.log("🕒 Thời điểm thanh toán:", payment.paidAt);
+        console.log("🏠 Phòng đã đánh dấu là đã có khách:", booking.roomId);
+      } else {
+        console.warn("⚠️ Không tìm thấy booking tương ứng với orderId:", orderId);
       }
     } else {
       console.log("❌ Thanh toán thất bại:", message);
     }
 
-    // MoMo yêu cầu phản hồi HTTP 200 để xác nhận callback đã được nhận
+    // ✅ MoMo yêu cầu phản hồi HTTP 200 để xác nhận callback đã được nhận
     res.status(200).json({ message: "acknowledged" });
   } catch (error) {
     console.error("💥 Lỗi xử lý callback MoMo:", error);
@@ -103,16 +110,14 @@ async handleMoMoNotify(req, res) {
   }
 }
 
-
-  // 🧭 Trang chuyển hướng sau thanh toán
-  async returnFromMoMo(req, res) {
-    const { resultCode } = req.query;
-    if (resultCode === "0") {
-      res.render("payment_success", { message: "Thanh toán thành công!" });
-    } else {
-      res.render("payment_fail", { message: "Thanh toán thất bại, vui lòng thử lại." });
-    }
+// 🧭 Trang chuyển hướng sau thanh toán
+async returnFromMoMo(req, res) {
+  const { resultCode } = req.query;
+  if (resultCode === "0") {
+    res.render("payment_success", { message: "Thanh toán thành công!" });
+  } else {
+    res.render("payment_fail", { message: "Thanh toán thất bại, vui lòng thử lại." });
   }
 }
-
+}
 module.exports = new PaymentController();

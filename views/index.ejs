@@ -262,99 +262,77 @@
 </section>
 
 
-<!-- Featured rooms (enhanced: supports filename / uploads path / full url, shows availability badges) -->
+<!-- Featured rooms (enhanced with booking status badges + view buttons) -->
 <section class="container py-5">
-  <h3 class="text-primary fw-bold mb-3">Phòng nổi bật</h3>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="text-primary fw-bold mb-0">Phòng nổi bật</h3>
+  <div>
+    <button id="btnShowAll" class="btn btn-primary btn-sm me-2">Xem tất cả phòng</button>
+    <button id="btnShowAvailable" class="btn btn-success btn-sm">Phòng sẵn sàng</button>
+  </div>
+</div>
+
 
   <div class="row g-4">
     <% if (rooms && rooms.length) { %>
       <% rooms.forEach(function(r){ 
-           // compute imagePath safely:
-           let imgPath = '/images/room1.jpeg'; // default
+           // ✅ Xác định đường dẫn ảnh
+           let imgPath = '/images/room1.jpeg';
            if (r.image) {
              const img = String(r.image || '').trim();
              const isUrl = img.startsWith('http://') || img.startsWith('https://');
              if (isUrl) {
                imgPath = img;
              } else if (img.startsWith('/')) {
-               imgPath = img; // already absolute path
-             } else if (img.indexOf('/') !== -1) {
-               // contains slash but not starting with slash -> ensure leading slash
-               imgPath = img.startsWith('uploads/') ? '/' + img : '/' + img;
+               imgPath = img;
+             } else if (img.includes('/')) {
+               imgPath = '/' + img;
              } else {
-               // filename only -> assume stored in public/uploads/rooms/
                imgPath = '/uploads/rooms/' + img;
              }
            }
 
-           // determine availability flags (order of precedence)
-           // 1) if search page provided isAvailableForRange (true/false) -> use it
-           // 2) else if homepage annotated isAvailableToday -> use it
-           // 3) else undefined (assume available)
-           let isAvailable = true;
-           if (typeof r.isAvailableForRange !== 'undefined' && r.isAvailableForRange !== null) {
-             isAvailable = !!r.isAvailableForRange;
-           } else if (typeof r.isAvailableToday !== 'undefined' && r.isAvailableToday !== null) {
-             isAvailable = !!r.isAvailableToday;
-           } else {
-             isAvailable = true;
-           }
+           // ✅ Kiểm tra trạng thái phòng (ưu tiên cờ từ DB)
+           const isBooked = !!r.isBooked; // true nếu phòng đang được đặt
       %>
         <div class="col-sm-6 col-lg-4">
-          <% if (isAvailable) { %>
-            <a href="/user/room/<%= r._id %>" class="text-decoration-none text-dark">
-          <% } else { %>
-            <div class="text-decoration-none text-dark">
-          <% } %>
-            <div class="card room-card h-100 border-0 shadow-sm rounded-4 position-relative <%= isAvailable ? '' : 'room-card-disabled' %>">
-              <img src="<%= imgPath %>" class="card-img-top rounded-top-4" style="height:220px;object-fit:cover" alt="room" onerror="this.src='/images/room1.jpeg'">
-              <div class="card-body">
-                <h6 class="fw-bold mb-1"><%= r.name || (r.type + ' - ' + r.roomNumber) %></h6>
-                <div class="d-flex justify-content-between align-items-center">
-                  <div class="text-info fw-bold"><%= (r.price||0).toLocaleString() %>₫/đêm</div>
-                  <div class="small text-muted"><%= r.type || '' %></div>
-                </div>
+          <div class="card room-card h-100 border-0 shadow-sm rounded-4 position-relative <%= isBooked ? 'room-card-disabled' : '' %>">
+            <img src="<%= imgPath %>" class="card-img-top rounded-top-4" style="height:220px;object-fit:cover" alt="room" onerror="this.src='/images/room1.jpeg'">
+            <div class="card-body">
+              <h6 class="fw-bold mb-1"><%= r.name || (r.type + ' - ' + r.roomNumber) %></h6>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="text-info fw-bold"><%= (r.price||0).toLocaleString() %>₫/đêm</div>
+                <div class="small text-muted"><%= r.type || '' %></div>
+              </div>
+            </div>
+
+            <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
+              <div>
+                <% if (isBooked) { %>
+                  <span class="badge bg-danger">Đã có khách</span>
+                <% } else { %>
+                  <span class="badge bg-success">Còn trống</span>
+                <% } %>
               </div>
 
-              <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
-                <div>
-                  <% if (typeof r.isAvailableForRange !== 'undefined' && r.isAvailableForRange !== null) { %>
-                    <% if (r.isAvailableForRange) { %>
-                      <span class="badge bg-success">Trống cho ngày đã chọn</span>
-                    <% } else { %>
-                      <span class="badge bg-danger">Bận trong khoảng đã chọn</span>
-                    <% } %>
-                  <% } else if (typeof r.isAvailableToday !== 'undefined' && r.isAvailableToday !== null) { %>
-                    <% if (r.isAvailableToday) { %>
-                      <span class="badge bg-success">Trống hôm nay</span>
-                    <% } else { %>
-                      <span class="badge bg-warning text-dark">Có khách hôm nay</span>
-                    <% } %>
-                  <% } %>
-                </div>
-
-                <div>
-                  <% if (isAvailable) { %>
-                    <a class="btn btn-primary btn-sm" href="/user/room/<%= r._id %>">Xem & Đặt</a>
-                  <% } else { %>
-                    <button class="btn btn-secondary btn-sm" disabled>Không khả dụng</button>
-                  <% } %>
-                </div>
+              <div>
+                <% if (!isBooked) { %>
+                  <a class="btn btn-primary btn-sm" href="/user/room/<%= r._id %>">Xem & Đặt</a>
+                <% } else { %>
+                  <button class="btn btn-secondary btn-sm" disabled>Không khả dụng</button>
+                <% } %>
               </div>
+            </div>
 
-            </div>
-          <% if (isAvailable) { %>
-            </a>
-          <% } else { %>
-            </div>
-          <% } %>
+          </div>
         </div>
       <% }) %>
     <% } else { %>
-      <div class="col-12 text-muted">Hiện chưa có phòng khả dụng.</div>
+      <div class="col-12 text-muted text-center">Hiện chưa có phòng khả dụng.</div>
     <% } %>
   </div>
 </section>
+
 <%- include('partials/footer') %>
 
 <script>
@@ -420,3 +398,28 @@ new Swiper(".discount-swiper", {
 });
   });
 </script>
+
+<script>
+  // 🔹 Khi DOM đã sẵn sàng
+  document.addEventListener("DOMContentLoaded", () => {
+    const allCards = document.querySelectorAll(".room-card");
+    const btnAll = document.getElementById("btnShowAll");
+    const btnAvailable = document.getElementById("btnShowAvailable");
+
+    // ✅ Nút hiển thị tất cả phòng
+    btnAll.addEventListener("click", () => {
+      allCards.forEach(card => {
+        card.parentElement.style.display = "block";
+      });
+    });
+
+    // ✅ Nút hiển thị chỉ phòng trống
+    btnAvailable.addEventListener("click", () => {
+      allCards.forEach(card => {
+        const isBooked = card.classList.contains("room-card-disabled");
+        card.parentElement.style.display = isBooked ? "none" : "block";
+      });
+    });
+  });
+</script>
+

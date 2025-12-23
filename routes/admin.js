@@ -269,8 +269,7 @@ router.get('/bookings', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Update booking status
-// Update booking status
+// ✅ Cập nhật trạng thái đơn đặt phòng và trạng thái phòng tương ứng
 router.post('/bookings/:id/status', async (req, res, next) => {
   try {
     const { status } = req.body;
@@ -293,9 +292,21 @@ router.post('/bookings/:id/status', async (req, res, next) => {
       { $set: { bookingStatus: status } }
     );
 
+    // ✅ Cập nhật trạng thái phòng tương ứng
+    if (status === "checked_out") {
+      // Khách đã trả phòng → Phòng trống trở lại
+      await Room.findByIdAndUpdate(booking.roomId, { isBooked: false });
+      console.log("🏠 Phòng đã trả:", booking.roomId);
+    } 
+    else if (["paid", "checked_in"].includes(status)) {
+      // Khách vừa thanh toán hoặc đang ở → Phòng đã có khách
+      await Room.findByIdAndUpdate(booking.roomId, { isBooked: true });
+      console.log("🏠 Phòng đang có khách:", booking.roomId);
+    }
+
     res.redirect('/admin/bookings');
   } catch (e) {
-    console.error('❌ Lỗi cập nhật trạng thái booking:', e);
+    console.error('❌ Lỗi cập nhật trạng thái booking hoặc phòng:', e);
     next(e);
   }
 });
