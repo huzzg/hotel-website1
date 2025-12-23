@@ -49,13 +49,17 @@ app.use(attachUser);
 app.use(async (req, res, next) => {
   try {
     if (req.session.user?._id) {
-      const user = await User.findById(req.session.user._id).select("username avatar email role").lean();
-      res.locals.currentUser = user;
-      req.user = user; // Cho controller dùng
-    } else {
-      res.locals.currentUser = null;
-      req.user = null;
-    }
+  const user = await User.findById(req.session.user._id)
+    .select("username avatar email role profile.name") // 👈 thêm profile.name
+    .lean();
+
+  res.locals.currentUser = user;
+  req.user = user;
+} else {
+  res.locals.currentUser = null;
+  req.user = null;
+}
+
   } catch (err) {
     console.error("⚠️ Lỗi middleware lấy user:", err);
     res.locals.currentUser = null;

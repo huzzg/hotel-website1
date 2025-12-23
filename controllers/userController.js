@@ -64,6 +64,13 @@ exports.updateProfile = async (req, res) => {
 
     await user.save();
 
+    // ✅ Cập nhật session để hiển thị tên mới ngay lập tức
+if (req.session.user) {
+  req.session.user.profile = req.session.user.profile || {};
+  req.session.user.profile.name = user.profile.name;
+}
+
+
     const updatedUser = await User.findById(req.session.user._id);
     req.session.user = updatedUser;
 
