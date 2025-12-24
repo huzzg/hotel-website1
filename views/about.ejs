@@ -1,30 +1,58 @@
 <%- include('partials/header') %>
 
-<div class="container mt-5 mb-5">
-  <!-- Giới thiệu -->
-  <section class="text-center mb-5">
-    <h2 class="fw-bold mb-3">Về Chúng Tôi</h2>
-    <p class="text-muted">
+<style>
+  /* Ảnh nền nhẹ nhàng cho phần giới thiệu */
+  .about-section {
+    background: url('/images/hotel-bg.jpg') center/cover no-repeat;
+    position: relative;
+    padding: 80px 0;
+    color: #fff;
+  }
+
+  .about-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .about-section .container {
+    position: relative;
+    z-index: 2;
+  }
+
+  .card {
+    transition: transform 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+  }
+
+  textarea:focus, input:focus {
+    border-color: #007bff !important;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+  }
+</style>
+
+<!-- Giới thiệu + Sứ mệnh + Giá trị -->
+<section class="about-section text-center text-white">
+  <div class="container">
+    <h2 class="fw-bold mb-4">Về Chúng Tôi</h2>
+    <p class="mb-5">
       Khách sạn Phenikaa tự hào mang đến cho quý khách những trải nghiệm nghỉ dưỡng tuyệt vời 
       với phong cách phục vụ chuyên nghiệp, thân thiện và gần gũi với thiên nhiên.
     </p>
-  </section>
 
-  <!-- Sứ mệnh -->
-  <section class="text-center my-5">
     <h4 class="fw-bold">Sứ Mệnh Của Chúng Tôi</h4>
-    <p class="text-muted">
+    <p class="mb-5">
       Chúng tôi mong muốn trở thành điểm đến lý tưởng cho mọi du khách trong và ngoài nước, 
       mang đến không gian thư giãn, tiện nghi và đậm đà bản sắc Việt.
     </p>
-  </section>
 
-  <!-- Giá trị -->
-  <section>
-    <h4 class="text-center fw-bold mb-4">Giá Trị Cốt Lõi</h4>
+    <h4 class="fw-bold mb-4">Giá Trị Cốt Lõi</h4>
     <div class="row text-center">
       <div class="col-md-4 mb-4">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card border-0 h-100 shadow-sm">
           <div class="card-body">
             <i class="bi bi-award-fill text-primary fs-1 mb-2"></i>
             <h5 class="fw-bold text-primary">Chuyên Nghiệp</h5>
@@ -33,7 +61,7 @@
         </div>
       </div>
       <div class="col-md-4 mb-4">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card border-0 h-100 shadow-sm">
           <div class="card-body">
             <i class="bi bi-emoji-smile-fill text-success fs-1 mb-2"></i>
             <h5 class="fw-bold text-success">Thân Thiện</h5>
@@ -42,7 +70,7 @@
         </div>
       </div>
       <div class="col-md-4 mb-4">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card border-0 h-100 shadow-sm">
           <div class="card-body">
             <i class="bi bi-heart-fill text-warning fs-1 mb-2"></i>
             <h5 class="fw-bold text-warning">Trải Nghiệm</h5>
@@ -51,48 +79,52 @@
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Gửi ý kiến -->
-  <section class="mt-5">
-    <h3 class="text-center fw-bold mb-4">Gửi Ý Kiến Của Bạn Cho Chúng Tôi</h3>
-    <p class="text-center text-muted mb-4">
-      Chúng tôi luôn lắng nghe để cải thiện dịch vụ tốt hơn. Hãy chia sẻ cảm nhận hoặc góp ý của bạn!
-    </p>
+<!-- Gửi ý kiến -->
+<div class="container my-5">
+  <h3 class="text-center fw-bold mb-4">Gửi Ý Kiến Của Bạn Cho Chúng Tôi</h3>
+  <p class="text-center text-muted mb-4">
+    Chúng tôi luôn lắng nghe để cải thiện dịch vụ tốt hơn. Hãy chia sẻ cảm nhận hoặc góp ý của bạn!
+  </p>
 
-    <form action="/about/feedback" method="POST" class="p-4 bg-white rounded shadow-sm" style="max-width: 650px; margin: 0 auto;">
-      <div class="mb-3">
-        <label for="name" class="form-label fw-semibold">Họ và tên</label>
-        <input type="text" id="name" name="name" class="form-control"
-          value="<%= user ? (user.profile?.name || user.username) : '' %>"
-          placeholder="Nhập họ và tên của bạn" required>
-      </div>
+  <form action="/about/feedback" method="POST" class="p-4 bg-white rounded shadow-sm" style="max-width: 650px; margin: 0 auto;">
+    <div class="mb-3">
+      <label for="name" class="form-label fw-semibold">Họ và tên</label>
+      <input type="text" id="name" name="name" class="form-control"
+        value=""
+        placeholder="Nhập họ và tên của bạn" required>
+    </div>
 
-      <div class="mb-3">
-        <label for="email" class="form-label fw-semibold">Email</label>
-        <input type="email" id="email" name="email" class="form-control"
-          value="<%= user ? user.email : '' %>"
-          placeholder="Nhập email của bạn" required>
-      </div>
+    <div class="mb-3">
+      <label for="email" class="form-label fw-semibold">Email</label>
+      <input type="email" id="email" name="email" class="form-control"
+        value="<%= user ? user.email : '' %>"
+        placeholder="Nhập email của bạn" required>
+    </div>
 
-      <div class="mb-3">
-        <label for="message" class="form-label fw-semibold">Nội dung góp ý</label>
-        <textarea id="message" name="message" class="form-control" rows="5"
-          placeholder="Nhập ý kiến của bạn..." required></textarea>
-      </div>
+    <div class="mb-3">
+      <label for="message" class="form-label fw-semibold">Nội dung góp ý</label>
+      <textarea id="message" name="message" class="form-control" rows="5"
+        placeholder="Nhập ý kiến của bạn..." required></textarea>
+    </div>
 
-      <button type="submit" class="btn btn-primary w-100">
-        <i class="bi bi-send-fill"></i> Gửi ý kiến
-      </button>
-    </form>
+    <button type="submit" class="btn btn-primary w-100">
+      <i class="bi bi-send-fill"></i> Gửi ý kiến
+    </button>
+  </form>
 
-    <% if (typeof success !== 'undefined') { %>
-      <div class="alert alert-success text-center mt-4"><%= success %></div>
-    <% } %>
-    <% if (typeof error !== 'undefined') { %>
-      <div class="alert alert-danger text-center mt-4"><%= error %></div>
-    <% } %>
-  </section>
+  <% 
+  const successMsg = (typeof success === 'string') ? success.trim() : '';
+  const errorMsg = (typeof error === 'string') ? error.trim() : '';
+%>
+
+<% if (successMsg) { %>
+  <div class="alert alert-success text-center mt-4"><%= successMsg %></div>
+<% } else if (errorMsg) { %>
+  <div class="alert alert-danger text-center mt-4"><%= errorMsg %></div>
+<% } %>
 </div>
 
 <%- include('partials/footer') %>
