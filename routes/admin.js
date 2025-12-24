@@ -169,7 +169,8 @@ router.get('/dashboard', async (req, res, next) => {
       statsRows,
        range,
       selectedRange: range,
-      selectedDate: date ? new Date(date) : null
+      selectedDate: date ? new Date(date) : null,
+      user: req.user
     });
 
   } catch (err) {
@@ -184,7 +185,7 @@ router.get('/dashboard', async (req, res, next) => {
 router.get('/rooms', async (req, res, next) => {
   try {
     const rooms = await Room.find({}).sort({ createdAt: -1 }).lean();
-    res.render('admin-rooms', { title: 'Admin • Quản lý phòng', rooms });
+    res.render('admin-rooms', { title: 'Admin • Quản lý phòng', rooms, user: req.user });
   } catch (e) { next(e); }
 });
 
@@ -270,7 +271,8 @@ router.get('/bookings', async (req, res, next) => {
 
     res.render('admin-bookings', {
       title: 'Admin • Đơn đặt phòng',
-      bookings
+      bookings,
+      user: req.user
     });
   } catch (e) { next(e); }
 });
@@ -335,7 +337,7 @@ router.post('/bookings/:id/delete', async (req, res, next) => {
 router.get('/users', async (req, res, next) => {
   try {
     const users = await User.find({}).sort({ createdAt: -1 }).lean();
-    res.render('admin-users', { title: 'Admin • Khách hàng', users });
+    res.render('admin-users', { title: 'Admin • Khách hàng', users, user: req.user });
   } catch (e) { next(e); }
 });
 
@@ -380,10 +382,11 @@ router.get('/discounts', async (req, res, next) => {
       d.isValid = d.active && start && end && today >= start && today <= end;
     });
 
-    res.render('admin-discounts', {
+    res.render('admin-discounts', { 
       title: 'Admin • Mã giảm giá',
       discounts,
-      messages: req.flash ? req.flash() : {}
+      messages: req.flash ? req.flash() : {},
+      user: req.user
     });
   } catch (e) {
     next(e);
@@ -533,7 +536,7 @@ router.post('/discounts/:id/delete', async (req, res) => {
 // GET trang chỉnh sửa
 router.get('/discounts/edit/:id', async (req, res) => {
   const discount = await Discount.findById(req.params.id);
-  res.render('admin-discount-edit', { discount });
+  res.render('admin-discount-edit', { discount, user: req.user });
 });
 
 // POST lưu chỉnh sửa

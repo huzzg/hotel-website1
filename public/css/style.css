@@ -662,46 +662,17 @@ body {
   font-weight: bold;
 }
 
-/* ========== AUTH PAGE (Login/Register) ========== */
-body.auth-page {
-  background: none !important;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  overflow-x: hidden;
+/* Tăng khoảng cách giữa các dòng trong phần Dịch vụ ở footer */
+footer .list-unstyled li {
+  margin-bottom: 10px; /* tạo khoảng cách giữa các dòng */
+  line-height: 1.8; /* tăng chiều cao dòng để chữ thoáng hơn */
 }
 
-.auth-section {
-  position: relative;
-  min-height: calc(100vh - 100px); /* trừ phần header/footer */
-  background: url('/img/hotel-bg1.jpg') center center / cover no-repeat fixed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Nếu muốn chữ đồng đều hơn */
+footer .list-unstyled li:last-child {
+  margin-bottom: 0; /* bỏ khoảng cách ở dòng cuối cùng */
 }
 
-.auth-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 0;
-}
-
-.auth-card {
-  position: relative;
-  z-index: 2;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  width: 380px;
-  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.3);
-  animation: fadeIn 0.8s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 
 
