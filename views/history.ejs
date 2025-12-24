@@ -19,13 +19,22 @@
           else if (status === 'checked_in') statusText = 'Đã nhận phòng';
           else if (status === 'checked_out') statusText = 'Đã trả phòng';
           else if (status === 'cancelled') statusText = 'Đã hủy';
+
+          // ✅ Xác định đường dẫn ảnh an toàn
+          let imgPath = '/images/default-room.jpg';
+          if (b.roomId && b.roomId.image) {
+            const img = b.roomId.image;
+            if (img.startsWith('http://') || img.startsWith('https://')) imgPath = img;
+            else if (img.startsWith('/')) imgPath = img;
+            else imgPath = '/uploads/rooms/' + img;
+          }
       %>
 
       <div class="col-12">
         <div class="history-card shadow-sm rounded d-flex align-items-center p-3 bg-white">
           <div class="col-md-2 d-flex align-items-center justify-content-center">
             <img 
-              src="<%= b.roomId?.image || '/images/default-room.jpg' %>" 
+              src="<%= imgPath %>"
               alt="<%= b.roomId?.name || 'Phòng không xác định' %>" 
               class="img-fluid rounded shadow-sm" 
               style="width: 120px; height: 90px; object-fit: cover;"
@@ -107,9 +116,8 @@
             <div class="modal-body">
               <div class="row">
                 <div class="col-md-5 text-center">
-                  <img src="<%= b.roomId?.image || '/images/room1.jpeg' %>"
-                       class="img-fluid rounded-4 shadow-sm"
-                       alt="Ảnh phòng">
+                  <img src="<%= imgPath %>" class="img-fluid rounded-4 shadow-sm mb-3"
+                       alt="Ảnh phòng" style="width:100%; max-height:250px; object-fit:cover;">
                 </div>
                 <div class="col-md-7">
                   <table class="table table-borderless">
@@ -129,7 +137,7 @@
                             else if (b.status === 'checked_in') badgeClass = 'badge bg-primary';
                             else if (b.status === 'checked_out') badgeClass = 'badge bg-info';
                           %>
-                          <span class="<%= badgeClass %> fs-6"><%= b.statusText || b.status %></span>
+                          <span class="<%= badgeClass %> fs-6"><%= statusText %></span>
                         </td>
                       </tr>
                     </tbody>

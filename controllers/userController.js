@@ -95,53 +95,59 @@ exports.handleForgotPassword = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
+    // Không tìm thấy email
     if (!user) {
       return res.render('forgot-password', {
-        step: 1,
         message: '❌ Không tìm thấy tài khoản với email này.',
         email: null
       });
     }
 
+    // Tạo mã OTP
     const otp = crypto.randomInt(100000, 999999).toString();
     user.resetPasswordOTP = otp;
     user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 phút
     await user.save();
 
-    // Gửi email
+    // Gửi email OTP
     const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
 
     const mailOptions = {
-      from: `"Hotel Phenikaa" <${process.env.GMAIL_USER}>`,
+      from: `"Hotel Phenikaa" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Mã đặt lại mật khẩu - Hotel Phenikaa',
-      html: `<p>Mã xác nhận của bạn là: <b>${otp}</b></p><p>Hiệu lực trong 10 phút.</p>`
+      html: `
+        <p>Xin chào,</p>
+        <p>Mã xác nhận đặt lại mật khẩu của bạn là: <b>${otp}</b></p>
+        <p>Mã có hiệu lực trong <b>10 phút</b>. Vui lòng không chia sẻ mã này cho người khác.</p>
+      `
     };
 
     await transporter.sendMail(mailOptions);
 
-    res.render('forgot-password', {
-      step: 2,
+    // ✅ Chuyển luôn sang trang nhập OTP
+    return res.render('reset-password', {
       email,
-      message: '✅ Mã xác thực đã được gửi đến email của bạn.'
+      message: '✅ Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.'
     });
+
   } catch (error) {
-    console.error(error);
-    res.render('forgot-password', {
-      step: 1,
+    console.error('❌ Lỗi gửi mã OTP:', error);
+    return res.render('forgot-password', {
       email: null,
-      message: '❌ Có lỗi xảy ra khi gửi mã xác nhận.'
+      message: '❌ Có lỗi xảy ra khi gửi mã xác nhận. Vui lòng thử lại sau.'
     });
   }
 };
+
 
 // ==================== RESET PASSWORD ====================
 exports.handleResetPassword = async (req, res) => {
@@ -149,37 +155,48 @@ exports.handleResetPassword = async (req, res) => {
     const { email, otp, password, confirmPassword } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user || user.resetPasswordOTP !== otp || user.resetPasswordExpires < Date.now()) {
-      return res.render('forgot-password', {
-        step: 2,
+    // Kiểm tra user & OTP hợp lệ
+    if (!user) {
+      return res.render('reset-password', {
         email,
-        message: '❌ Mã xác nhận không hợp lệ hoặc đã hết hạn.'
+        message: '❌ Không tìm thấy tài khoản với email này.'
       });
     }
 
+    if (
+      user.resetPasswordOTP !== otp ||
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires < Date.now()
+    ) {
+      return res.render('reset-password', {
+        email,
+        message: '❌ Mã OTP không hợp lệ hoặc đã hết hạn.'
+      });
+    }
+
+    // Kiểm tra khớp mật khẩu
     if (password !== confirmPassword) {
-      return res.render('forgot-password', {
-        step: 2,
+      return res.render('reset-password', {
         email,
         message: '❌ Mật khẩu xác nhận không khớp.'
       });
     }
 
+    // Hash và lưu mật khẩu mới
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
     user.resetPasswordOTP = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    res.render('forgot-password', {
-      step: 3,
-      email,
-      message: '✅ Mật khẩu đã được thay đổi thành công! Bạn có thể đăng nhập lại.'
+    // ✅ Sau khi đổi xong, render về trang quên mật khẩu (để đăng nhập lại)
+    return res.render('forgot-password', {
+      email: null,
+      message: '✅ Mật khẩu đã được đặt lại thành công! Hãy đăng nhập với mật khẩu mới.'
     });
   } catch (error) {
-    console.error(error);
-    res.render('forgot-password', {
-      step: 2,
+    console.error('❌ Lỗi đặt lại mật khẩu:', error);
+    return res.render('reset-password', {
       email: req.body.email,
       message: '❌ Có lỗi xảy ra, vui lòng thử lại.'
     });
@@ -191,21 +208,42 @@ exports.handleResetPassword = async (req, res) => {
 exports.getHistory = async (req, res) => {
   try {
     const userId = req.session.user._id;
+
+    // ✅ Populate đúng tên trường có trong Room.js
     const bookings = await Booking.find({ userId })
-      .populate('roomId')
-      .populate('userId') // quan trọng để lấy avatar và tên
+      .populate({
+        path: 'roomId',
+        model: 'Room',
+        select: 'roomNumber type price image status description', // ⚡ đổi 'images' → 'image'
+      })
+      .populate({
+        path: 'userId',
+        model: 'User',
+        select: 'username profile.name avatar',
+      })
       .sort({ createdAt: -1 })
       .lean();
 
+    // ✅ Log rõ ràng hơn để test dữ liệu trả về
+    if (bookings.length === 0) {
+      console.log('⚠️ Người dùng này chưa có booking nào.');
+    } else {
+      console.log('📦 Booking mẫu:');
+      console.log(JSON.stringify(bookings[0].roomId, null, 2));
+    }
+
+    // ✅ Render ra view
     res.render('history', {
       bookings,
-      user: req.session.user
+      user: req.session.user,
     });
   } catch (err) {
     console.error('❌ Lỗi tải lịch sử đặt phòng:', err);
     res.status(500).send('Lỗi khi tải lịch sử đặt phòng');
   }
 };
+
+
 
 // ==================== CHI TIẾT ĐẶT PHÒNG ====================
 exports.viewBookingDetail = async (req, res) => {

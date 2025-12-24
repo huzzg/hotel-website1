@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const User = require('./models/User'); // ✅ Thêm dòng này để lấy user từ DB
 const reviewRoutes = require('./routes/review');
 const { attachUser } = require('./middleware/authMiddleware');
+const aboutRoutes = require('./routes/about');
 
 const app = express();
 
@@ -90,6 +91,7 @@ app.use('/user', userRoutes);
 app.use('/auth', authRoutes);
 app.use('/search', searchRoutes);
 app.use('/payment', paymentRoutes);
+app.use('/about', aboutRoutes);
 
 // Models
 const Room = require('./models/Room');

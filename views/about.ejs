@@ -1,73 +1,98 @@
 <%- include('partials/header') %>
 
 <div class="container mt-5 mb-5">
-  <h2 class="text-center mb-4 fw-bold">Về Chúng Tôi</h2>
-  <p class="text-center text-muted">
-    Khách sạn Phenikaa tự hào mang đến cho quý khách những trải nghiệm nghỉ dưỡng tuyệt vời với phong cách phục vụ chuyên nghiệp,
-    thân thiện và gần gũi với thiên nhiên.
-  </p>
+  <!-- Giới thiệu -->
+  <section class="text-center mb-5">
+    <h2 class="fw-bold mb-3">Về Chúng Tôi</h2>
+    <p class="text-muted">
+      Khách sạn Phenikaa tự hào mang đến cho quý khách những trải nghiệm nghỉ dưỡng tuyệt vời 
+      với phong cách phục vụ chuyên nghiệp, thân thiện và gần gũi với thiên nhiên.
+    </p>
+  </section>
 
-  <div class="text-center my-5">
+  <!-- Sứ mệnh -->
+  <section class="text-center my-5">
     <h4 class="fw-bold">Sứ Mệnh Của Chúng Tôi</h4>
     <p class="text-muted">
-      Chúng tôi mong muốn trở thành điểm đến lý tưởng cho mọi du khách trong và ngoài nước, mang đến không gian thư giãn,
-      tiện nghi và đậm đà bản sắc Việt.
+      Chúng tôi mong muốn trở thành điểm đến lý tưởng cho mọi du khách trong và ngoài nước, 
+      mang đến không gian thư giãn, tiện nghi và đậm đà bản sắc Việt.
     </p>
-  </div>
+  </section>
 
-  <h4 class="text-center fw-bold mb-4">Giá Trị Cốt Lõi</h4>
-  <div class="row text-center">
-    <div class="col-md-4 mb-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="fw-bold text-primary">Chuyên Nghiệp</h5>
-          <p>Đội ngũ nhân viên tận tâm và được đào tạo bài bản mang đến dịch vụ tốt nhất.</p>
+  <!-- Giá trị -->
+  <section>
+    <h4 class="text-center fw-bold mb-4">Giá Trị Cốt Lõi</h4>
+    <div class="row text-center">
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <i class="bi bi-award-fill text-primary fs-1 mb-2"></i>
+            <h5 class="fw-bold text-primary">Chuyên Nghiệp</h5>
+            <p>Đội ngũ nhân viên tận tâm và được đào tạo bài bản, mang đến dịch vụ tốt nhất.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <i class="bi bi-emoji-smile-fill text-success fs-1 mb-2"></i>
+            <h5 class="fw-bold text-success">Thân Thiện</h5>
+            <p>Không gian và môi trường gần gũi, mang lại cảm giác thoải mái cho khách hàng.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <i class="bi bi-heart-fill text-warning fs-1 mb-2"></i>
+            <h5 class="fw-bold text-warning">Trải Nghiệm</h5>
+            <p>Không chỉ là nơi nghỉ dưỡng, mà còn là hành trình tận hưởng cuộc sống đích thực.</p>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-md-4 mb-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="fw-bold text-success">Thân Thiện</h5>
-          <p>Không gian và môi trường thân thiện, gần gũi với khách hàng và thiên nhiên.</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4 mb-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="fw-bold text-warning">Trải Nghiệm</h5>
-          <p>Không chỉ là nơi nghỉ dưỡng, mà còn là hành trình tận hưởng cuộc sống đích thực.</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  </section>
 
-  <footer class="mt-5 bg-dark text-light p-4 rounded">
-    <div class="row">
-      <div class="col-md-4">
-        <h6>Liên hệ</h6>
-        <p>Địa chỉ: Số 1, Trần Hưng Đạo, Hà Nội</p>
-        <p>Điện thoại: (+84) 222 777</p>
-        <p>Email: contact@phenikaa.vn</p>
+  <!-- Gửi ý kiến -->
+  <section class="mt-5">
+    <h3 class="text-center fw-bold mb-4">Gửi Ý Kiến Của Bạn Cho Chúng Tôi</h3>
+    <p class="text-center text-muted mb-4">
+      Chúng tôi luôn lắng nghe để cải thiện dịch vụ tốt hơn. Hãy chia sẻ cảm nhận hoặc góp ý của bạn!
+    </p>
+
+    <form action="/about/feedback" method="POST" class="p-4 bg-white rounded shadow-sm" style="max-width: 650px; margin: 0 auto;">
+      <div class="mb-3">
+        <label for="name" class="form-label fw-semibold">Họ và tên</label>
+        <input type="text" id="name" name="name" class="form-control"
+          value="<%= user ? (user.profile?.name || user.username) : '' %>"
+          placeholder="Nhập họ và tên của bạn" required>
       </div>
-      <div class="col-md-4">
-        <h6>Dịch vụ</h6>
-        <ul class="list-unstyled">
-          <li>Phòng nghỉ</li>
-          <li>Nhà hàng</li>
-          <li>Spa & Massage</li>
-          <li>Tour du lịch</li>
-        </ul>
+
+      <div class="mb-3">
+        <label for="email" class="form-label fw-semibold">Email</label>
+        <input type="email" id="email" name="email" class="form-control"
+          value="<%= user ? user.email : '' %>"
+          placeholder="Nhập email của bạn" required>
       </div>
-      <div class="col-md-4">
-        <h6>Bản đồ</h6>
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3723.8488715840276!2d105.77972271532761!3d21.0381327928497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab3f70e2dbcb%3A0x8f96b53a8be29945!2sPhenikaa%20University!5e0!3m2!1svi!2s!4v1678343557417!5m2!1svi!2s"
-          width="100%" height="180" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+
+      <div class="mb-3">
+        <label for="message" class="form-label fw-semibold">Nội dung góp ý</label>
+        <textarea id="message" name="message" class="form-control" rows="5"
+          placeholder="Nhập ý kiến của bạn..." required></textarea>
       </div>
-    </div>
-  </footer>
+
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-send-fill"></i> Gửi ý kiến
+      </button>
+    </form>
+
+    <% if (typeof success !== 'undefined') { %>
+      <div class="alert alert-success text-center mt-4"><%= success %></div>
+    <% } %>
+    <% if (typeof error !== 'undefined') { %>
+      <div class="alert alert-danger text-center mt-4"><%= error %></div>
+    <% } %>
+  </section>
 </div>
 
 <%- include('partials/footer') %>
